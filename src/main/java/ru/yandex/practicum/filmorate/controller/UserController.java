@@ -16,9 +16,9 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/users")
-
 public class UserController {
     private final Map<Long, User> users = new HashMap<>();
+    private int idUser;
 
     @GetMapping
     public Collection<User> getAllUsers() {
@@ -29,7 +29,8 @@ public class UserController {
     public User createUser(@Valid @RequestBody User user) {
         try {
             validateUser(user);
-            user.setId(getNextId());
+            idUser++;
+            user.setId(idUser);
             users.put(user.getId(), user);
             log.info("Пользователь успешно создан: {}", user);
             return user;
@@ -80,14 +81,5 @@ public class UserController {
             throw e; // Перебрасываем исключение, чтобы клиент мог обработать его
         }
         return user;
-    }
-
-    private long getNextId() {
-        long currentMaxId = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
     }
 }

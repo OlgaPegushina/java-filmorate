@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 @Data
@@ -14,12 +15,16 @@ import java.time.LocalDate;
 public class User {
     private long id;
 
+    @NotNull
     @Email
     private String email;
 
     @NotBlank (message = "Логин не может быть пустым или с пробелами")
     private String login;
 
+    @NotNull
     private String name;
+
+    @NotNull
     private LocalDate birthday;
 }

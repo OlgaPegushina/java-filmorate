@@ -19,6 +19,7 @@ import java.util.Map;
 @Slf4j
 public class FilmController {
     private final Map<Long, Film> films = new HashMap<>();
+    private int idFilm = 0;
 
     @GetMapping
     public Collection<Film> getAllFilms() {
@@ -29,7 +30,8 @@ public class FilmController {
     public Film createFilm(@Valid @RequestBody Film film) {
         try {
             validateFilm(film);
-            film.setId(getNextId());
+            idFilm++;
+            film.setId(idFilm);
             films.put(film.getId(), film);
             log.info("Фильм успешно создан: {}", film);
             return film;
@@ -81,15 +83,5 @@ public class FilmController {
             throw e; // Перебрасываем исключение, чтобы клиент мог обработать его
         }
         return film;
-    }
-
-
-    private long getNextId() {
-        long currentId = films.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++ currentId;
     }
 }
