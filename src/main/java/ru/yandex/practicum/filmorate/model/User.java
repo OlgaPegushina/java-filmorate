@@ -19,6 +19,7 @@ import java.util.Set;
 public class User {
     private long id;
 
+    @NotNull
     @Email(message = "Некорректная почта")
     private String email;
 

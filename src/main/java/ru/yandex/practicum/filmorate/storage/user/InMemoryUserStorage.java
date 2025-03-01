@@ -3,10 +3,8 @@ package ru.yandex.practicum.filmorate.storage.user;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +17,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User create(User user) {
-        validateUser(user);
         idUser++;
         user.setId(idUser);
         users.put(user.getId(), user);
@@ -48,9 +45,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-        if (user.getId() == 0) {
-            throw new ValidationException("ID не может быть равен 0");
-        }
         if (users.containsKey(user.getId())) {
             users.put(user.getId(), user);
         } else {
@@ -65,22 +59,6 @@ public class InMemoryUserStorage implements UserStorage {
             users.remove(id);
         } else {
             throw new NotFoundException("Пользователь с ID " + id + " не найден.");
-        }
-    }
-
-    private  void validateUser(User user) {
-        if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
-            throw  new ValidationException("Электронная почта не может быть пустой и должна содержать знак - @");
-        }
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин не может быть пустым или содержать пробелы");
-        }
-        LocalDate toDay = LocalDate.now();
-        if (user.getBirthday() == null || user.getBirthday().isAfter(toDay)) {
-            throw new ValidationException("Дата рождения не может быть больше текущей даты");
-        }
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
         }
     }
 }
