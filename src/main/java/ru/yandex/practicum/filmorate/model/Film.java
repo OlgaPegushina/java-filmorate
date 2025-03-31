@@ -1,36 +1,46 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldDefaults;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Data
-@EqualsAndHashCode(of = { "id" })
+@EqualsAndHashCode(of = {"id"})
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Film {
-    private long id;
+    long id;
 
     @NotBlank(message = "Имя не может быть пустым")
-    private String name;
+    String name;
 
     @Size(max = 200, message = "Описание не должно больше 200 символов")
-    private String description;
+    String description;
 
     @NotNull
-    private LocalDate releaseDate;
+    LocalDate releaseDate;
 
     @Min(value = 1, message = "Продолжительность фильма должна быть положительной")
-    private long duration;
+    long duration;
 
-    @JsonIgnore
-    private final Set<Long> likes = new HashSet<>();
+    @Builder.Default
+    Set<Long> likes = new HashSet<>();
+
+    @NotNull(message = "У фильма должен быть указан рейтинг MPA")
+    RatingMpa mpa;
+
+    @Builder.Default
+    List<Genre> genres = new ArrayList<>();
 }

@@ -66,7 +66,7 @@ SELECT name
 FROM film
 WHERE film_id IN (
     SELECT film_id
-    FROM film_likes
+    FROM film_users
     GROUP BY film_id
     ORDER BY COUNT(user_id) DESC
     LIMIT 10
@@ -82,15 +82,15 @@ WHERE film_id IN (
 
 ```SQL
 SELECT *
-FROM user;
+FROM users;
 ```
 
 * Получение информации по пользователю по его id:
 
 ```SQL
 SELECT *
-FROM user
-WHERE user.user_id = <?>; -- id пользователя
+FROM users
+WHERE users.user_id = <?>; -- id пользователя
 ```
 
 * Получение id и имени друзей по id пользователя = <?>:
@@ -98,11 +98,11 @@ WHERE user.user_id = <?>; -- id пользователя
 ```SQL
 SELECT u.name,
         u.user_id
-FROM user AS u
+FROM users AS u
 WHERE u.user_id IN (
     SELECT f.friend_id
     FROM friendship_status AS f
-    WHERE f.user_id = <?> AND status = TRUE
+    WHERE f.user_id = <?> 
 );
 ```
 
@@ -110,13 +110,11 @@ WHERE u.user_id IN (
 
 ```SQL
 SELECT u.*
-FROM user u
+FROM users u
 INNER JOIN friendship_status f1 ON u.user_id = f1.friend_id
 INNER JOIN friendship_status f2 ON u.user_id = f2.friend_id
 WHERE f1.user_id = 1
-    AND f1.status = TRUE
-    AND f2.user_id = 2
-    AND f2.status = TRUE;
+    AND f2.user_id = 2;
 ```
 
 </details>
