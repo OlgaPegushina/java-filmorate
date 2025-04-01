@@ -10,7 +10,5 @@ public interface FilmStorage extends Storage<Film> {
 
     void addLike(Long filmId, Long userId);
 
-    int getLikeCount(Film film);
-
     void deleteLike(Long filmId, Long userId);
 }

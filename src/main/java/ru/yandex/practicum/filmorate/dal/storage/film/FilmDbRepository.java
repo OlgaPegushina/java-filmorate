@@ -57,12 +57,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmReposi
         film.setLikes(new HashSet<>());
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            addFilmGenresToDB(film.getId(), film.getGenres());
-        }
-        if (film.getLikes() != null && !film.getLikes().isEmpty()) {
-            for (Long userId : film.getLikes()) {
-                addLike(film.getId(), userId);
-            }
+            addFilmGenres(film.getId(), film.getGenres());
         }
 
         film.setMpa(mpa);
@@ -75,9 +70,9 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmReposi
         String query = "SELECT * FROM film WHERE film_id = ?";
         Film film = findOne(query, mapper, id)
                 .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", id)));
-        Set<Long> likes = getLikeUserIdsFromDB(id);
+        Set<Long> likes = getLikeUserIds(id);
         film.setLikes(likes);
-        List<Genre> genres = getGenreFromDB(id);
+        List<Genre> genres = getGenre(id);
         film.setGenres(genres);
         film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
         return film;
@@ -94,8 +89,8 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmReposi
         String query = "SELECT * FROM film";
         List<Film> films = findMany(query, mapper);
         for (Film film : films) {
-            film.setLikes(getLikeUserIdsFromDB(film.getId()));
-            film.setGenres(getGenreFromDB(film.getId()));
+            film.setLikes(getLikeUserIds(film.getId()));
+            film.setGenres(getGenre(film.getId()));
             film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
         }
         return films;
@@ -115,9 +110,9 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmReposi
                 film.getId()
         );
 
-        deleteFilmGenresFromDB(film.getId());
+        deleteFilmGenres(film.getId());
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            addFilmGenresToDB(film.getId(), film.getGenres());
+            addFilmGenres(film.getId(), film.getGenres());
         }
         if (film.getLikes() != null && !film.getLikes().isEmpty()) {
             for (Long userId : film.getLikes()) {
@@ -136,30 +131,30 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmReposi
             throw new InternalServerException(String.format("Не удалось удалить фильм с id: %d", id));
         }
 
-        deleteFilmGenresFromDB(id);
+        deleteFilmGenres(id);
     }
 
     @Override
-    public Set<Long> getLikeUserIdsFromDB(long id) {
+    public Set<Long> getLikeUserIds(long id) {
         String query = "SELECT user_id FROM film_users WHERE film_id = ?";
         return new HashSet<>(jdbc.query(query, new LikeUserIdsRowMapper(), id));
     }
 
     @Override
-    public List<Genre> getGenreFromDB(long id) {
+    public List<Genre> getGenre(long id) {
         String query = "SELECT g.genre_id, g.name FROM film_genre fg " +
                 "INNER JOIN genre g ON fg.genre_id = g.genre_id " +
                 "WHERE fg.film_id = ?";
         return new ArrayList<>(jdbc.query(query, new GenreRowMapper(), id));
     }
 
-    public boolean deleteFilmGenresFromDB(Long filmId) {
+    private boolean deleteFilmGenres(Long filmId) {
         String query = "DELETE FROM film_genre WHERE film_id = ?";
         int rowsDeleted = jdbc.update(query, filmId);
         return rowsDeleted > 0;
     }
 
-    public boolean addFilmGenresToDB(Long filmId, List<Genre> genres) {
+    private boolean addFilmGenres(Long filmId, List<Genre> genres) {
         for (Genre genre : genres) {
             genreDbRepository.getGenreById(genre.getId());
             String query = "MERGE INTO film_genre AS target " +
@@ -172,18 +167,23 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmReposi
 
     @Override
     public Collection<Film> getPopularFilms(int count) {
-        List<Film> popularFilms =
-                getAllValues()
-                        .stream()
-                        .sorted(Comparator.comparingInt(this::getLikeCount).reversed())
-                        .limit(count)
-                        .collect(Collectors.toList());
-        return popularFilms;
-    }
+        String query = "SELECT f.* FROM film f " +
+                "JOIN ( " +
+                "    SELECT film_id " +
+                "    FROM film_users " +
+                "    GROUP BY film_id " +
+                "    ORDER BY COUNT(user_id) DESC " +
+                "    LIMIT ? " +
+                ") AS popular ON f.film_id = popular.film_id " +
+                "ORDER BY (SELECT COUNT(*) FROM film_users WHERE film_id = f.film_id) DESC;";
 
-    @Override
-    public int getLikeCount(Film film) {
-        return film.getLikes().size();
+        List<Film> popularFilms = findMany(query, mapper, count);
+        for (Film film : popularFilms) {
+            film.setLikes(getLikeUserIds(film.getId()));
+            film.setGenres(getGenre(film.getId()));
+            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
+        }
+        return popularFilms;
     }
 
     @Override

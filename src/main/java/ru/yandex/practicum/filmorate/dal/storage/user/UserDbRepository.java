@@ -41,7 +41,6 @@ public class UserDbRepository extends BaseRepository<User> implements UserReposi
         );
 
         user.setId(id);
-        user.setFriends(new HashSet<>());
         return user;
     }
 
@@ -50,7 +49,7 @@ public class UserDbRepository extends BaseRepository<User> implements UserReposi
         String query = "SELECT * FROM users WHERE user_id = ?";
         User user = findOne(query, mapper, id)
                 .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id %d не найден.", id)));
-        Set<Long> friends = getFriendIdsFromDB(id);
+        Set<Long> friends = getFriendIds(id);
         user.setFriends(friends);
         return user;
     }
@@ -66,7 +65,7 @@ public class UserDbRepository extends BaseRepository<User> implements UserReposi
         String query = "SELECT * FROM users";
         List<User> users = findMany(query, mapper);
         for (User user : users) {
-            user.setFriends(getFriendIdsFromDB(user.getId()));
+            user.setFriends(getFriendIds(user.getId()));
         }
         return users;
     }
@@ -94,16 +93,6 @@ public class UserDbRepository extends BaseRepository<User> implements UserReposi
         }
     }
 
-    public User findByEmail(String email) {
-        String query = "SELECT * FROM users WHERE email = ?";
-        User user = findOne(query, mapper, email)
-                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с email %s не найден.", email)));
-        Set<Long> friends = getFriendIdsFromDB(user.getId());
-        user.setFriends(friends);
-        return user;
-    }
-
-
     @Override
     public void addFriend(Long userId, Long friendId) {
         getById(userId);
@@ -121,17 +110,17 @@ public class UserDbRepository extends BaseRepository<User> implements UserReposi
     }
 
     @Override
-    public Set<Long> getFriendIdsFromDB(long id) {
+    public Set<Long> getFriendIds(long id) {
         String query = "SELECT friend_id FROM friendship_status WHERE user_id = ?";
         return new HashSet<>(jdbc.query(query, new FriendIdsRowMapper(), id));
     }
 
     @Override
     public List<User> getMutualFriends(Long userId1, Long userId2) {
-        User user1 = getById(userId1);
-        User user2 = getById(userId2);
+        getById(userId1);
+        getById(userId2);
         String query = "SELECT u.* " +
-                "FROM users AS u " +
+                "FROM users u " +
                 "INNER JOIN friendship_status f1 ON u.user_id = f1.friend_id " +
                 "INNER JOIN friendship_status f2 ON u.user_id = f2.friend_id " +
                 "WHERE f1.user_id = ? " +

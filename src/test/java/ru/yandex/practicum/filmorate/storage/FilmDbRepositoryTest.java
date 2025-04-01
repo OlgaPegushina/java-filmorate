@@ -19,7 +19,6 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -161,7 +160,7 @@ public class FilmDbRepositoryTest {
         filmDbRepository.addLike(film.getId(), user1.getId());
         filmDbRepository.addLike(film.getId(), user2.getId());
 
-        Set<Long> likes = filmDbRepository.getLikeUserIdsFromDB(film.getId());
+        Set<Long> likes = filmDbRepository.getLikeUserIds(film.getId());
 
         assertEquals(likes.size(), 2, "Количество пользователей возвращается неверно");
         assertTrue(likes.contains(user1.getId()));
@@ -191,7 +190,7 @@ public class FilmDbRepositoryTest {
 
         filmDbRepository.deleteLike(film.getId(), user1.getId());
 
-        Set<Long> likes = filmDbRepository.getLikeUserIdsFromDB(film.getId());
+        Set<Long> likes = filmDbRepository.getLikeUserIds(film.getId());
 
         assertEquals(likes.size(), 1, "Количество пользователей возвращается неверно");
         assertTrue(likes.contains(user2.getId()));
@@ -221,9 +220,10 @@ public class FilmDbRepositoryTest {
         filmDbRepository.addLike(film2.getId(), user2.getId());
         filmDbRepository.addLike(film2.getId(), user1.getId());
 
-        Collection<Film> popularFilms = filmDbRepository.getPopularFilms(1);
+        List<Film> popularFilms = (List<Film>) filmDbRepository.getPopularFilms(2);
 
-        assertEquals(popularFilms.size(), 1, "Количество возвращено неверно");
-        assertTrue(popularFilms.contains(film2), "film2 возвращается неверно");
+        assertEquals(popularFilms.size(), 2, "Количество возвращено неверно");
+        assertEquals(popularFilms.get(0), film2);
+        assertEquals(popularFilms.get(1), film);
     }
 }

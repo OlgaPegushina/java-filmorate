@@ -5,5 +5,5 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import java.util.Set;
 
 public interface UserRepository extends UserStorage {
-    Set<Long> getFriendIdsFromDB(long id);
+    Set<Long> getFriendIds(long id);
 }

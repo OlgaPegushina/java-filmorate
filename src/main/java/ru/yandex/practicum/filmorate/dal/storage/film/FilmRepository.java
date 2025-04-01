@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface FilmRepository extends FilmStorage {
-    Set<Long> getLikeUserIdsFromDB(long id);
+    Set<Long> getLikeUserIds(long id);
 
-    List<Genre> getGenreFromDB(long id);
+    List<Genre> getGenre(long id);
 }
