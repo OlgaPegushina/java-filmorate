@@ -1,11 +1,12 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldDefaults;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PastOrPresent;
@@ -14,25 +15,26 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Data
-@EqualsAndHashCode(of = { "id" })
+@EqualsAndHashCode(of = {"id"})
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class User {
-    private long id;
+    long id;
 
     @NotNull
     @Email(message = "Некорректная почта")
-    private String email;
+    String email;
 
     @NotBlank(message = "Логин не может быть пустым или с пробелами")
-    private String login;
+    String login;
 
     @NotNull
-    private String name;
+    String name;
 
     @NotNull
     @PastOrPresent(message = "Дата рождения не может быть в будущем")
-    private LocalDate birthday;
+    LocalDate birthday;
 
-    @JsonIgnore
-    private final Set<Long> friends = new HashSet<>();
+    @Builder.Default
+    Set<Long> friends = new HashSet<>();
 }
