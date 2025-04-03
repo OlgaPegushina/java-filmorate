@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Repository("userDbRepository")
 @Primary // Устанавливаем UserDbRepository как первичный бин
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class UserDbRepository extends BaseRepository<User> implements UserRepository {
+public class UserDbRepository extends BaseRepository<User> implements UserStorage {
     RowMapper<User> mapper = new UserRowMapper();
 
     public UserDbRepository(JdbcTemplate jdbc) {

@@ -17,7 +17,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.RatingMpa;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
 
 import java.sql.Date;
 import java.util.*;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Repository("filmDbRepository")
 @Primary // Устанавливаем FilmDbRepository как первичный бин
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class FilmDbRepository extends BaseRepository<Film> implements FilmRepository {
+public class FilmDbRepository extends BaseRepository<Film> implements FilmStorage {
     RowMapper<Film> mapper = new FilmRowMapper();
     MpaDbRepository mpaDbRepository;
     UserStorage userStorage;
