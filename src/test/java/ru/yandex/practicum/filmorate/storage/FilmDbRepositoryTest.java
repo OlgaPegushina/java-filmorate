@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import ru.yandex.practicum.filmorate.FilmorateApplication;
+import ru.yandex.practicum.filmorate.dal.storage.director.DirectorDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.genre.GenreDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.mpa.MpaDbRepository;
@@ -30,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @JdbcTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@Import({FilmDbRepository.class, UserDbRepository.class, MpaDbRepository.class, GenreDbRepository.class})
+@Import({FilmDbRepository.class, UserDbRepository.class, MpaDbRepository.class, GenreDbRepository.class, DirectorDbRepository.class})
 @ContextConfiguration(classes = {FilmorateApplication.class})
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -38,6 +39,7 @@ public class FilmDbRepositoryTest {
     FilmDbRepository filmDbRepository;
     UserDbRepository userDbRepository;
     MpaDbRepository mpaDbRepository;
+    DirectorDbRepository directorDbRepository;
 
     @Test
     void createTest() {

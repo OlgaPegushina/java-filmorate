@@ -6,18 +6,21 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.dal.mappers.DirectorRowMapper;
 import ru.yandex.practicum.filmorate.dal.mappers.FilmRowMapper;
 import ru.yandex.practicum.filmorate.dal.mappers.GenreRowMapper;
 import ru.yandex.practicum.filmorate.dal.mappers.LikeUserIdsRowMapper;
 import ru.yandex.practicum.filmorate.dal.storage.BaseRepository;
+import ru.yandex.practicum.filmorate.dal.storage.director.DirectorDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.genre.GenreDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.mpa.MpaDbRepository;
+import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.exception.InternalServerException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.RatingMpa;
-import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
 
 import java.sql.Date;
 import java.util.*;
@@ -31,13 +34,15 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     MpaDbRepository mpaDbRepository;
     UserStorage userStorage;
     GenreDbRepository genreDbRepository;
+    DirectorDbRepository directorDbRepository;
 
     public FilmDbRepository(JdbcTemplate jdbc, MpaDbRepository mpaDbRepository, UserStorage userStorage,
-                            GenreDbRepository genreDbRepository) {
+                            GenreDbRepository genreDbRepository, DirectorDbRepository directorDbRepository) {
         super(jdbc);
         this.mpaDbRepository = mpaDbRepository;
         this.userStorage = userStorage;
         this.genreDbRepository = genreDbRepository;
+        this.directorDbRepository = directorDbRepository;
     }
 
     @Override
@@ -54,13 +59,16 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 film.getMpa().getId()
         );
         film.setId(id);
-        film.setLikes(new HashSet<>());
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             addFilmGenres(film.getId(), film.getGenres());
         }
 
         film.setMpa(mpa);
+
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            addDirectorFilms(film.getId(), film.getDirectors());
+        }
 
         return film;
     }
@@ -73,8 +81,10 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         Set<Long> likes = getLikeUserIds(id);
         film.setLikes(likes);
         List<Genre> genres = getGenre(id);
-        film.setGenres(genres);
+        film.setGenres(Objects.requireNonNullElseGet(genres, ArrayList::new));
         film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
+        List<Director> directors = findDirectors(id);
+        film.setDirectors(directors);
         return film;
     }
 
@@ -90,8 +100,9 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         List<Film> films = findMany(query, mapper);
         for (Film film : films) {
             film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(getGenre(film.getId()));
+            film.setGenres(Objects.requireNonNullElseGet(getGenre(film.getId()), ArrayList::new));
             film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
+            film.setDirectors(findDirectors(film.getId()));
         }
         return films;
     }
@@ -119,6 +130,10 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 addLike(film.getId(), userId);
             }
         }
+        deleteDirectorFilms(film.getId());
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            addDirectorFilms(film.getId(), film.getDirectors());
+        }
         return film;
     }
 
@@ -132,6 +147,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         }
 
         deleteFilmGenres(id);
+        deleteDirectorFilms(id);
     }
 
     @Override
@@ -146,23 +162,6 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 "INNER JOIN genre g ON fg.genre_id = g.genre_id " +
                 "WHERE fg.film_id = ?";
         return new ArrayList<>(jdbc.query(query, new GenreRowMapper(), id));
-    }
-
-    private boolean deleteFilmGenres(Long filmId) {
-        String query = "DELETE FROM film_genre WHERE film_id = ?";
-        int rowsDeleted = jdbc.update(query, filmId);
-        return rowsDeleted > 0;
-    }
-
-    private boolean addFilmGenres(Long filmId, List<Genre> genres) {
-        for (Genre genre : genres) {
-            genreDbRepository.getGenreById(genre.getId());
-            String query = "MERGE INTO film_genre AS target " +
-                    "KEY (film_id, genre_id) " +
-                    "VALUES (?, ?)";
-            jdbc.update(query, filmId, genre.getId());
-        }
-        return true;
     }
 
     @Override
@@ -200,6 +199,68 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         userStorage.getById(userId);
         String query = "DELETE FROM film_users WHERE film_id = ? and user_id = ?";
         super.update(query, filmId, userId);
+    }
+
+    @Override
+    public List<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
+        String query = "SELECT f.*, COUNT(fu.user_id) AS like_count \n" +
+                "FROM film f \n" +
+                "JOIN director_film df ON f.film_id = df.film_id \n" +
+                "LEFT JOIN film_users fu ON f.film_id = fu.film_id \n" +
+                "WHERE df.director_id = ? \n" +
+                "GROUP BY f.film_id \n" +
+                "ORDER BY \n" +
+                (sortBy.equals("likes") ? "like_count DESC" : "f.release_date");
+
+        List<Film> films = findMany(query, mapper, directorId);
+        for (Film film : films) {
+            film.setLikes(getLikeUserIds(film.getId()));
+            film.setGenres(getGenre(film.getId()));
+            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
+            film.setDirectors(findDirectors(film.getId()));
+        }
+        return films;
+    }
+
+    private boolean deleteFilmGenres(Long filmId) {
+        String query = "DELETE FROM film_genre WHERE film_id = ?";
+        int rowsDeleted = jdbc.update(query, filmId);
+        return rowsDeleted > 0;
+    }
+
+    private boolean addFilmGenres(Long filmId, List<Genre> genres) {
+        for (Genre genre : genres) {
+            genreDbRepository.getGenreById(genre.getId());
+            String query = "MERGE INTO film_genre AS target " +
+                    "KEY (film_id, genre_id) " +
+                    "VALUES (?, ?)";
+            jdbc.update(query, filmId, genre.getId());
+        }
+        return true;
+    }
+
+    private boolean addDirectorFilms(Long filmId, List<Director> directors) {
+        for (Director director : directors) {
+            directorDbRepository.getById(director.getId());
+            String query = "MERGE INTO director_film AS target " +
+                    "KEY (director_id, film_id) " +
+                    "VALUES (?, ?)";
+            jdbc.update(query, director.getId(), filmId);
+        }
+        return true;
+    }
+
+    private boolean deleteDirectorFilms(Long filmId) {
+        String query = "DELETE FROM director_film WHERE film_id = ?";
+        int rowsDeleted = jdbc.update(query, filmId);
+        return rowsDeleted > 0;
+    }
+
+    private List<Director> findDirectors(long film_id) {
+        String query = "SELECT d.director_id, d.name FROM director_film df " +
+                "INNER JOIN director d ON df.director_id = d.director_id " +
+                "WHERE df.film_id = ?";
+        return new ArrayList<>(jdbc.query(query, new DirectorRowMapper(), film_id));
     }
 }
 
