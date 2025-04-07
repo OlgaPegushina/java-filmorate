@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS director CASCADE;
 DROP TABLE IF EXISTS director_film CASCADE;
 DROP TABLE IF EXISTS review CASCADE;
 DROP TABLE IF EXISTS review_users CASCADE;
+DROP TABLE IF EXISTS  film_ratings CASCADE;
 
 CREATE TABLE IF NOT EXISTS rating_mpa (
     rating_id INTEGER PRIMARY KEY,
@@ -106,3 +107,11 @@ CREATE TABLE IF NOT EXISTS review_users (
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS film_ratings (
+    user_id   BIGINT NOT NULL,
+    film_id   BIGINT NOT NULL,
+    rating    DOUBLE NOT NULL, -- например, от 1.0 до 5.0
+    PRIMARY KEY (user_id, film_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (film_id) REFERENCES film(film_id)
+);

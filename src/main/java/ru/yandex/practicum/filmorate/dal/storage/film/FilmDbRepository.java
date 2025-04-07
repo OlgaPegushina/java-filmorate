@@ -187,10 +187,16 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
 
     @Override
     public void addLike(Long filmId, Long userId) {
-        userStorage.getById(userId);
-        getById(filmId);
-        String query = "INSERT INTO film_users (film_id, user_id) VALUES (?, ?)";
-        super.update(query, filmId, userId);
+        if (!likeExists(filmId, userId)) {
+            String query = "INSERT INTO film_users (film_id, user_id) VALUES (?, ?)";
+            super.update(query, filmId, userId);
+        }
+    }
+
+    public boolean likeExists(Long filmId, Long userId) {
+        String sql = "SELECT COUNT(*) FROM film_users WHERE film_id = ? AND user_id = ?";
+        Integer count = jdbc.queryForObject(sql, Integer.class, filmId, userId);
+        return count != null && count > 0;
     }
 
     @Override
@@ -220,6 +226,38 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
             film.setDirectors(findDirectors(film.getId()));
         }
         return films;
+    }
+
+    /**
+     * Загрузка оценок пользователей
+     */
+
+    public void rateFilm(Long userId, Long filmId, Double rating) {
+        String sql = "INSERT INTO film_ratings (user_id, film_id, rating) VALUES (?, ?, ?)";
+        jdbc.update(sql, userId, filmId, rating);
+    }
+
+    @Override
+    public Map<Long, Map<Long, Double>> loadUserRatings() {
+        String sql = "SELECT user_id, film_id, rating FROM film_ratings";
+        return jdbc.query(sql, rs -> {
+            Map<Long, Map<Long, Double>> result = new HashMap<>();
+            while (rs.next()) {
+                Long userId = rs.getLong("user_id");
+                Long filmId = rs.getLong("film_id");
+                double rating = rs.getDouble("rating");
+                result
+                        .computeIfAbsent(userId, k -> new HashMap<>())
+                        .put(filmId, rating);
+            }
+            return result;
+        });
+    }
+
+    @Override
+    public Set<Long> findAllFilmIds() {
+        String sql = "SELECT film_id FROM film";
+        return new HashSet<>(jdbc.query(sql, (rs, rowNum) -> rs.getLong("film_id")));
     }
 
     private boolean deleteFilmGenres(Long filmId) {

@@ -6,6 +6,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface FilmStorage extends Storage<Film> {
@@ -20,4 +21,8 @@ public interface FilmStorage extends Storage<Film> {
     void deleteLike(Long filmId, Long userId);
 
     Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy);
+
+    Map<Long, Map<Long, Double>> loadUserRatings();
+
+    Set<Long> findAllFilmIds();
 }

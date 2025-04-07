@@ -5,14 +5,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.dal.storage.mpa.MpaRepository;
 import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.RecommendationService.Deviation;
 
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -20,6 +26,9 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserService {
     UserStorage userStorage;
+    FilmStorage filmStorage;
+    MpaRepository mpaRepository;
+    RecommendationService recommendationService;
 
     public User create(User user) {
         validateUser(user);
@@ -63,6 +72,25 @@ public class UserService {
 
     public List<User> getAllFriends(Long userId) {
         return userStorage.getAllFriends(userId);
+    }
+
+
+    public List<Film> getRecommendations(Long userId) {
+        Map<Long, Map<Long, Double>> ratings = filmStorage.loadUserRatings();
+        Map<Long, Map<Long, Deviation>> deviations = recommendationService.buildDeviations(ratings);
+        Set<Long> rated = ratings.getOrDefault(userId, Map.of()).keySet();
+        Set<Long> allFilms = filmStorage.findAllFilmIds();
+        System.out.println("User rated films: " + rated);
+        System.out.println("All films: " + allFilms);
+
+        return allFilms.stream()
+                .filter(filmId -> !rated.contains(filmId))
+                .map(filmId -> Map.entry(filmId, recommendationService.predictRating(userId, filmId, ratings, deviations)))
+                .filter(entry -> entry.getValue() > 0.0)
+                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                .limit(10)
+                .map(entry -> filmStorage.getById(entry.getKey()))
+                .collect(Collectors.toList());
     }
 
     private void validateUser(User user) {

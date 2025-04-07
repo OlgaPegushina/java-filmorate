@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
@@ -15,8 +17,9 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FilmService {
-    private final FilmStorage filmStorage;
+    FilmStorage filmStorage;
 
     public Film create(Film film) {
         validateFilm(film);
