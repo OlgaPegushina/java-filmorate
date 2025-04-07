@@ -3,11 +3,12 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
@@ -55,6 +56,13 @@ public class FilmService {
 
     public void deleteLike(Long filmId, Long userId) {
         filmStorage.deleteLike(filmId, userId);
+    }
+
+    public Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
+        if (sortBy != null) {
+            return filmStorage.findFilmsByDirectorSorted(directorId, sortBy);
+        }
+        return new ArrayList<>();
     }
 
     private void validateFilm(Film film) {
