@@ -65,6 +65,13 @@ public class FilmService {
         return new ArrayList<>();
     }
 
+    public Collection<Film> searchFilms(String strQuery, String searchIn) {
+        if (strQuery != null && !strQuery.trim().isEmpty() && searchIn != null && !searchIn.trim().isEmpty()) {
+            return filmStorage.searchFilms(strQuery, searchIn);
+        }
+        return new ArrayList<>();
+    }
+
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
             throw new ValidationException("Имя не должно быть пустым");

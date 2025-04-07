@@ -203,16 +203,52 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
 
     @Override
     public List<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
-        String query = "SELECT f.*, COUNT(fu.user_id) AS like_count \n" +
-                "FROM film f \n" +
-                "JOIN director_film df ON f.film_id = df.film_id \n" +
-                "LEFT JOIN film_users fu ON f.film_id = fu.film_id \n" +
-                "WHERE df.director_id = ? \n" +
-                "GROUP BY f.film_id \n" +
-                "ORDER BY \n" +
+        String query = "SELECT f.*, COUNT(fu.user_id) AS like_count " +
+                "FROM film f " +
+                "JOIN director_film df ON f.film_id = df.film_id " +
+                "LEFT JOIN film_users fu ON f.film_id = fu.film_id " +
+                "WHERE df.director_id = ? " +
+                "GROUP BY f.film_id " +
+                "ORDER BY " +
                 (sortBy.equals("likes") ? "like_count DESC" : "f.release_date");
 
         List<Film> films = findMany(query, mapper, directorId);
+        for (Film film : films) {
+            film.setLikes(getLikeUserIds(film.getId()));
+            film.setGenres(getGenre(film.getId()));
+            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
+            film.setDirectors(findDirectors(film.getId()));
+        }
+        return films;
+    }
+
+    @Override
+    public List<Film> searchFilms(String strQuery, String searchIn) {
+        StringBuilder query = new StringBuilder("SELECT f.* FROM film f ");
+        query.append("LEFT JOIN director_film df ON f.film_id = df.film_id ");
+        query.append("LEFT JOIN director d ON df.director_id = d.director_id ");
+        query.append("LEFT JOIN film_users fu ON f.film_id = fu.film_id ");
+        query.append("WHERE ");
+
+        List<String> conditions = new ArrayList<>();
+        List<String> params = new ArrayList<>();
+
+        if (searchIn.contains("title")) {
+            conditions.add("UPPER(f.name) LIKE UPPER(?)");
+            params.add("%" + strQuery + "%");
+        }
+        if (searchIn.contains("director")) {
+            conditions.add("UPPER(d.name) LIKE UPPER(?)");
+            params.add("%" + strQuery + "%");
+        }
+
+        query.append(String.join(" OR ", conditions));
+
+        query.append(" GROUP BY f.film_id ");
+
+        query.append(" ORDER BY COUNT(fu.user_id) DESC");
+
+        List<Film> films = findMany(query.toString(), mapper, params.toArray());
         for (Film film : films) {
             film.setLikes(getLikeUserIds(film.getId()));
             film.setGenres(getGenre(film.getId()));
