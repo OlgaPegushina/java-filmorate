@@ -343,5 +343,44 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 "WHERE df.film_id = ?";
         return new ArrayList<>(jdbc.query(query, new DirectorRowMapper(), film_id));
     }
+
+    public Map<Integer, List<Genre>> getAllFilmGenres(Collection<Film> films) {
+        Map<Integer, List<Genre>> filmGenreMap = new HashMap<>();
+        Collection<String> ids = films.stream()
+                .map(film -> String.valueOf(film.getId()))
+                .toList();
+
+        String query = "SELECT fg.film_id, g.genre_id, g.name " +
+                "FROM film_genre fg " +
+                "JOIN genre g ON g.genre_id = fg.genre_id " +
+                "WHERE fg.film_id IN (%s)";
+
+        jdbc.query(String.format(query, String.join(",", ids)), rs -> {
+            Genre genre = Genre.builder()
+                    .id(rs.getInt("genre_id"))
+                    .name(rs.getString("name"))
+                    .build();
+
+            Integer filmId = rs.getInt("film_id");
+
+            filmGenreMap.putIfAbsent(filmId, new ArrayList<>());
+            filmGenreMap.get(filmId).add(genre);
+        });
+        return filmGenreMap;
+    }
+
+
+    public Collection<Film> getCommonFilms(Integer userId, Integer friendId) {
+        String query = """
+                SELECT DISTINCT f.*
+                FROM film_users fu1
+                JOIN film_users fu2 ON fu1.film_id = fu2.film_id
+                JOIN film f ON fu1.film_id = f.film_id
+                WHERE fu1.user_id = ?
+                AND fu2.user_id = ?
+                ORDER BY f.rating_id DESC
+                """;
+        return findMany(query, mapper, userId, friendId);
+    }
 }
 
