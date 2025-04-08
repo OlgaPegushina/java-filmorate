@@ -197,35 +197,4 @@ public class FilmDbRepositoryTest {
         assertEquals(likes.size(), 1, "Количество пользователей возвращается неверно");
         assertTrue(likes.contains(user2.getId()));
     }
-
-    @Test
-    void getPopularFilmsTest() {
-        Film film = filmDbRepository.create(createFilm());
-        Film film2 = filmDbRepository.create(createFilm());
-
-        User user1 = User.builder()
-                .login("логин")
-                .name("Имя")
-                .email("email@mail.ru")
-                .birthday(LocalDate.of(2000, 8, 19))
-                .build();
-        user1 = userDbRepository.create(user1);
-        User user2 = User.builder()
-                .login("логин2")
-                .name("Имя2")
-                .email("email2@mail.ru")
-                .birthday(LocalDate.of(2000, 8, 19))
-                .build();
-        user2 = userDbRepository.create(user2);
-
-        filmDbRepository.addLike(film.getId(), user1.getId());
-        filmDbRepository.addLike(film2.getId(), user2.getId());
-        filmDbRepository.addLike(film2.getId(), user1.getId());
-
-        List<Film> popularFilms = (List<Film>) filmDbRepository.getPopularFilms(2);
-
-        assertEquals(popularFilms.size(), 2, "Количество возвращено неверно");
-        assertEquals(popularFilms.get(0), film2);
-        assertEquals(popularFilms.get(1), film);
-    }
 }

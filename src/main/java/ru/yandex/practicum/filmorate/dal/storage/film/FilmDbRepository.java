@@ -159,18 +159,43 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     }
 
     @Override
-    public Collection<Film> getPopularFilms(int count) {
-        String query = "SELECT f.* FROM film f " +
+    public List<Film> getPopularFilms(int count, Long genreId, Integer year) {
+        StringBuilder query = new StringBuilder("SELECT f.* FROM film f " +
                 "JOIN ( " +
                 "    SELECT film_id " +
                 "    FROM film_users " +
                 "    GROUP BY film_id " +
                 "    ORDER BY COUNT(user_id) DESC " +
                 "    LIMIT ? " +
-                ") AS popular ON f.film_id = popular.film_id " +
-                "ORDER BY (SELECT COUNT(*) FROM film_users WHERE film_id = f.film_id) DESC;";
+                ") AS popular ON f.film_id = popular.film_id ");
 
-        List<Film> popularFilms = findMany(query, mapper, count);
+        if (genreId != null) {
+            query.append("JOIN film_genre fg ON f.film_id = fg.film_id ")
+                    .append("WHERE fg.genre_id = ? ");
+        }
+
+        if (year != null) {
+            if (genreId != null) {
+                query.append("AND ");
+            } else {
+                query.append("WHERE ");
+            }
+            query.append("YEAR(f.release_date) = ? ");
+        }
+
+        query.append("ORDER BY (SELECT COUNT(*) FROM film_users WHERE film_id = f.film_id) DESC;");
+
+        List<Film> popularFilms;
+        if (genreId != null && year != null) {
+            popularFilms = findMany(query.toString(), mapper, count, genreId, year);
+        } else if (genreId != null) {
+            popularFilms = findMany(query.toString(), mapper, count, genreId);
+        } else if (year != null) {
+            popularFilms = findMany(query.toString(), mapper, count, year);
+        } else {
+            popularFilms = findMany(query.toString(), mapper, count);
+        }
+
         return setFilms(popularFilms);
     }
 

@@ -14,7 +14,7 @@ public interface FilmStorage extends Storage<Film> {
 
     List<Genre> getGenre(long id);
 
-    Collection<Film> getPopularFilms(int count);
+    Collection<Film> getPopularFilms(int count, Long genreId, Integer year);
 
     void addLike(Long filmId, Long userId);
 
