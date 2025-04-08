@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dal.storage.director.DirectorStorage;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.dal.storage.mpa.MpaRepository;
 import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
@@ -26,6 +27,7 @@ public class UserService {
     UserStorage userStorage;
     FilmStorage filmStorage;
     MpaRepository mpaRepository;
+    DirectorStorage directorStorage;
 
     public User create(User user) {
         validateUser(user);

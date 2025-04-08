@@ -98,13 +98,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     public List<Film> getAllValues() {
         String query = "SELECT * FROM film";
         List<Film> films = findMany(query, mapper);
-        for (Film film : films) {
-            film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(Objects.requireNonNullElseGet(getGenre(film.getId()), ArrayList::new));
-            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-            film.setDirectors(findDirectors(film.getId()));
-        }
-        return films;
+        return setFilms(films);
     }
 
     @Override
@@ -177,12 +171,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 "ORDER BY (SELECT COUNT(*) FROM film_users WHERE film_id = f.film_id) DESC;";
 
         List<Film> popularFilms = findMany(query, mapper, count);
-        for (Film film : popularFilms) {
-            film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(getGenre(film.getId()));
-            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-        }
-        return popularFilms;
+        return setFilms(popularFilms);
     }
 
     @Override
@@ -219,13 +208,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 (sortBy.equals("likes") ? "like_count DESC" : "f.release_date");
 
         List<Film> films = findMany(query, mapper, directorId);
-        for (Film film : films) {
-            film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(getGenre(film.getId()));
-            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-            film.setDirectors(findDirectors(film.getId()));
-        }
-        return films;
+        return setFilms(films);
     }
 
     @Override
@@ -255,13 +238,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         query.append(" ORDER BY COUNT(fu.user_id) DESC");
 
         List<Film> films = findMany(query.toString(), mapper, params.toArray());
-        for (Film film : films) {
-            film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(getGenre(film.getId()));
-            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-            film.setDirectors(findDirectors(film.getId()));
-        }
-        return films;
+        return setFilms(films);
     }
 
     @Override
@@ -314,6 +291,16 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         params.addAll(excludedFilmIds);
 
         return jdbc.query(sql, mapper, params.toArray());
+    }
+
+    private List<Film> setFilms(List<Film> films) {
+        for (Film film : films) {
+            film.setLikes(getLikeUserIds(film.getId()));
+            film.setGenres(getGenre(film.getId()));
+            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
+            film.setDirectors(findDirectors(film.getId()));
+        }
+        return films;
     }
 
     private boolean deleteFilmGenres(Long filmId) {
