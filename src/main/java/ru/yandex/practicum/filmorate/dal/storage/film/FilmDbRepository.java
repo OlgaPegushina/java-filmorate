@@ -372,14 +372,14 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
 
     public Collection<Film> getCommonFilms(Integer userId, Integer friendId) {
         String query = """
-                SELECT DISTINCT f.*
+                SELECT f.*
                 FROM film_users fu1
                 JOIN film_users fu2 ON fu1.film_id = fu2.film_id
                 JOIN film f ON fu1.film_id = f.film_id
                 WHERE fu1.user_id = ?
-                AND fu2.user_id = ?
-                ORDER BY f.rating_id DESC
-                """;
+                  AND fu2.user_id = ?
+                GROUP BY f.film_id
+                ORDER BY (SELECT COUNT(*) FROM film_users WHERE film_users.film_id = f.film_id) DESC;""";
         return findMany(query, mapper, userId, friendId);
     }
 }
