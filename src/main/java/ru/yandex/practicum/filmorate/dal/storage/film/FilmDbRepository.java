@@ -98,13 +98,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     public List<Film> getAllValues() {
         String query = "SELECT * FROM film";
         List<Film> films = findMany(query, mapper);
-        for (Film film : films) {
-            film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(Objects.requireNonNullElseGet(getGenre(film.getId()), ArrayList::new));
-            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-            film.setDirectors(findDirectors(film.getId()));
-        }
-        return films;
+        return setFilms(films);
     }
 
     @Override
@@ -177,20 +171,21 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 "ORDER BY (SELECT COUNT(*) FROM film_users WHERE film_id = f.film_id) DESC;";
 
         List<Film> popularFilms = findMany(query, mapper, count);
-        for (Film film : popularFilms) {
-            film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(getGenre(film.getId()));
-            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-        }
-        return popularFilms;
+        return setFilms(popularFilms);
     }
 
     @Override
     public void addLike(Long filmId, Long userId) {
-        userStorage.getById(userId);
-        getById(filmId);
-        String query = "INSERT INTO film_users (film_id, user_id) VALUES (?, ?)";
-        super.update(query, filmId, userId);
+        if (!likeExists(filmId, userId)) {
+            String query = "INSERT INTO film_users (film_id, user_id) VALUES (?, ?)";
+            super.update(query, filmId, userId);
+        }
+    }
+
+    public boolean likeExists(Long filmId, Long userId) {
+        String sql = "SELECT COUNT(*) FROM film_users WHERE film_id = ? AND user_id = ?";
+        Integer count = jdbc.queryForObject(sql, Integer.class, filmId, userId);
+        return count != null && count > 0;
     }
 
     @Override
@@ -213,13 +208,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 (sortBy.equals("likes") ? "like_count DESC" : "f.release_date");
 
         List<Film> films = findMany(query, mapper, directorId);
-        for (Film film : films) {
-            film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(getGenre(film.getId()));
-            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-            film.setDirectors(findDirectors(film.getId()));
-        }
-        return films;
+        return setFilms(films);
     }
 
     @Override
@@ -249,6 +238,62 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         query.append(" ORDER BY COUNT(fu.user_id) DESC");
 
         List<Film> films = findMany(query.toString(), mapper, params.toArray());
+        return setFilms(films);
+    }
+
+    @Override
+    public Set<Long> getLikedFilmIdsByUser(Long userId) {
+        String sql = "SELECT film_id FROM film_users WHERE user_id = ?";
+        return new HashSet<>(jdbc.query(sql, (rs, rowNum) -> rs.getLong("film_id"), userId));
+    }
+
+    @Override
+    public Map<Long, Integer> getUsersWithCommonLikes(Long userId, Set<Long> likedFilmIds) {
+        if (likedFilmIds.isEmpty()) return Map.of();
+
+        String inSql = likedFilmIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = String.format("""
+                    SELECT user_id, COUNT(*) AS common
+                    FROM film_users
+                    WHERE film_id IN (%s) AND user_id != ?
+                    GROUP BY user_id
+                    ORDER BY common DESC
+                """, inSql);
+
+        List<Object> params = new ArrayList<>(likedFilmIds);
+        params.add(userId);
+
+        return jdbc.query(sql, rs -> {
+            Map<Long, Integer> result = new LinkedHashMap<>();
+            while (rs.next()) {
+                result.put(rs.getLong("user_id"), rs.getInt("common"));
+            }
+            return result;
+        }, params.toArray());
+    }
+
+    @Override
+    public List<Film> findRecommendedFilmsForUser(Set<Long> similarUserIds, Set<Long> excludedFilmIds) {
+        if (similarUserIds.isEmpty()) return List.of();
+
+        String usersSql = similarUserIds.stream().map(u -> "?").collect(Collectors.joining(","));
+        String excludedSql = excludedFilmIds.stream().map(f -> "?").collect(Collectors.joining(","));
+
+        String sql = String.format("""
+                    SELECT DISTINCT f.*
+                    FROM film f
+                    JOIN film_users fu ON f.film_id = fu.film_id
+                    WHERE fu.user_id IN (%s)
+                    AND fu.film_id NOT IN (%s)
+                """, usersSql, excludedSql);
+
+        List<Object> params = new ArrayList<>(similarUserIds);
+        params.addAll(excludedFilmIds);
+
+        return jdbc.query(sql, mapper, params.toArray());
+    }
+
+    private List<Film> setFilms(List<Film> films) {
         for (Film film : films) {
             film.setLikes(getLikeUserIds(film.getId()));
             film.setGenres(getGenre(film.getId()));
