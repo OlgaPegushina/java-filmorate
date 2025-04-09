@@ -11,7 +11,6 @@ import java.util.Collection;
 
 @RestController
 @RequestMapping("/films")
-@Slf4j
 @RequiredArgsConstructor
 public class FilmController {
     private final FilmService filmService;
