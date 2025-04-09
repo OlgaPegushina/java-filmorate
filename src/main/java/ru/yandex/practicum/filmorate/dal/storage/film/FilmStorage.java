@@ -29,4 +29,8 @@ public interface FilmStorage extends Storage<Film> {
     Map<Long, Integer> getUsersWithCommonLikes(Long userId, Set<Long> likedFilmIds);
 
     List<Film> findRecommendedFilmsForUser(Set<Long> similarUserIds, Set<Long> excludedFilmIds);
+
+    Map<Integer, List<Genre>> getAllFilmGenres(Collection<Film> films);
+
+    Collection<Film> getCommonFilms(Integer userId, Integer friendId);
 }
