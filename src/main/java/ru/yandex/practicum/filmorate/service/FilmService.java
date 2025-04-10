@@ -51,8 +51,8 @@ public class FilmService {
         filmStorage.deleteById(id);
     }
 
-    public Collection<Film> getPopularFilms(int count) {
-        return filmStorage.getPopularFilms(count);
+    public Collection<Film> getPopularFilms(Long genreId, Integer year, int count) {
+        return filmStorage.getPopularFilms(genreId, year, count);
     }
 
     public void addLike(Long filmId, Long userId) {
