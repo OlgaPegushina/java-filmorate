@@ -87,22 +87,23 @@ CREATE TABLE IF NOT EXISTS review (
     review_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     film_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
-    content VARCHAR(255),
+    content TEXT NOT NULL,
     is_positive BOOLEAN NOT NULL,
+    useful INT DEFAULT 0,
     FOREIGN KEY (film_id) REFERENCES film(film_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE
-);
+    );
 
 CREATE TABLE IF NOT EXISTS review_users (
-    review_id BIGINT,
-    user_id BIGINT,
-    rating INTEGER DEFAULT 0,
+    review_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    is_useful BOOLEAN NOT NULL,
     PRIMARY KEY (review_id, user_id),
     FOREIGN KEY (review_id) REFERENCES review(review_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE
-);
+    );
 
