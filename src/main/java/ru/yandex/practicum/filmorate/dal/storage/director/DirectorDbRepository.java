@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -74,5 +75,19 @@ public class DirectorDbRepository extends BaseRepository<Director> implements Di
         if (!isDeleted) {
             throw new InternalServerException(String.format("Не удалось удалить фильм с id: %d", id));
         }
+    }
+
+    @Override
+    public List<Director> getByFilmId(Long filmId) {
+        String sql = """
+                    SELECT d.director_id, d.name
+                    FROM director d
+                    JOIN film_director fd ON d.director_id = fd.director_id
+                    WHERE fd.film_id = ?
+                """;
+        return jdbc.query(sql, (rs, rowNum) -> Director.builder()
+                .id(rs.getLong("director_id"))
+                .name(rs.getString("name"))
+                .build(), filmId);
     }
 }

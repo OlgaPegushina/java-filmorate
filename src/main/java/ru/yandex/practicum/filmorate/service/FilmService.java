@@ -1,22 +1,27 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FilmService {
-    private final FilmStorage filmStorage;
+    FilmStorage filmStorage;
 
     public Film create(Film film) {
         validateFilm(film);
@@ -88,5 +93,18 @@ public class FilmService {
         if (film.getDuration() <= 0) {
             throw new ValidationException("Продолжительность фильма должна быть положительным числом");
         }
+    }
+
+    public Collection<Film> getCommonFilms(Integer userId, Integer friendId) {
+        Collection<Film> films = filmStorage.getCommonFilms(userId, friendId);
+        if (films.isEmpty()) {
+            return films;
+        }
+        Map<Integer, List<Genre>> filmGenresMap = filmStorage.getAllFilmGenres(films);
+        films.forEach(film -> {
+            long filmId = film.getId();
+            film.setGenres(filmGenresMap.getOrDefault((int) filmId, new ArrayList<>()));
+        });
+        return films;
     }
 }
