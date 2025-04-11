@@ -3,13 +3,11 @@ package ru.yandex.practicum.filmorate.dal.storage.film;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.dal.mappers.DirectorRowMapper;
-import ru.yandex.practicum.filmorate.dal.mappers.FilmRowMapper;
-import ru.yandex.practicum.filmorate.dal.mappers.GenreRowMapper;
-import ru.yandex.practicum.filmorate.dal.mappers.LikeUserIdsRowMapper;
+import ru.yandex.practicum.filmorate.dal.mappers.*;
 import ru.yandex.practicum.filmorate.dal.storage.BaseRepository;
 import ru.yandex.practicum.filmorate.dal.storage.director.DirectorDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.genre.GenreDbRepository;
@@ -157,6 +155,20 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 "INNER JOIN genre g ON fg.genre_id = g.genre_id " +
                 "WHERE fg.film_id = ?";
         return new ArrayList<>(jdbc.query(query, new GenreRowMapper(), id));
+    }
+
+    @Override
+    public RatingMpa getRatingMpa(long filmId) {
+        String query = "SELECT r.rating_id, r.name " +
+                "FROM film f " +
+                "INNER JOIN rating_mpa r ON f.rating_id = r.rating_id " +
+                "WHERE f.film_id = ?";
+
+        try {
+            return jdbc.queryForObject(query, new RatingMpaRowMapper(), filmId);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
     }
 
     @Override

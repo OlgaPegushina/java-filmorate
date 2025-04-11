@@ -73,7 +73,7 @@ public class FilmService {
 
     public Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
         if (sortBy != null) {
-            Collection<Film> films =  filmStorage.findFilmsByDirectorSorted(directorId, sortBy);
+            Collection<Film> films = filmStorage.findFilmsByDirectorSorted(directorId, sortBy);
             if (films.isEmpty()) {
                 throw new NotFoundException(String.format("Режиссер с id %d не найден.", directorId));
             }
@@ -116,6 +116,7 @@ public class FilmService {
         films.forEach(film -> {
             long filmId = film.getId();
             film.setGenres(filmGenresMap.getOrDefault((int) filmId, new ArrayList<>()));
+            film.setMpa(filmStorage.getRatingMpa(filmId));
         });
         return films;
     }
