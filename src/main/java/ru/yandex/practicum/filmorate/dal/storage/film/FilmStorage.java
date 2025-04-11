@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.dal.storage.film;
 import ru.yandex.practicum.filmorate.dal.storage.Storage;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.RatingMpa;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +32,8 @@ public interface FilmStorage extends Storage<Film> {
     List<Film> findRecommendedFilmsForUser(Set<Long> similarUserIds, Set<Long> excludedFilmIds);
 
     Map<Integer, List<Genre>> getAllFilmGenres(Collection<Film> films);
+
+    RatingMpa getRatingMpa(long filmId);
 
     Collection<Film> getCommonFilms(Integer userId, Integer friendId);
 }
