@@ -39,6 +39,9 @@ public class ReviewDbRepository extends BaseRepository<Review> implements Review
                 review.getContent(),
                 review.getIsPositive(),
                 review.getReviewId());
+        review.setReviewId(review.getReviewId());
+        review.setFilmId(review.getReviewId());
+        review.setUserId(review.getReviewId());
         return review;
     }
 
