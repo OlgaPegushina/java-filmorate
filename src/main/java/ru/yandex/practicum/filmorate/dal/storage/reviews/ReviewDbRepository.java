@@ -68,12 +68,12 @@ public class ReviewDbRepository extends BaseRepository<Review> implements Review
     @Override
     public List<Review> findAll(int count) {
         String sql = """
-                    SELECT r.*, COALESCE(SUM(ru.rating), 0) AS useful
-                    FROM review r
-                    LEFT JOIN review_users ru ON r.review_id = ru.review_id
-                    GROUP BY r.review_id
-                    ORDER BY useful DESC
-                    LIMIT ?
+                SELECT r.*, COALESCE(SUM(ru.is_useful), 0) AS useful
+                FROM review r
+                LEFT JOIN review_users ru ON r.review_id = ru.review_id
+                GROUP BY r.review_id
+                ORDER BY useful DESC
+                LIMIT ?
                 """;
         return jdbc.query(sql, mapper, count);
     }
