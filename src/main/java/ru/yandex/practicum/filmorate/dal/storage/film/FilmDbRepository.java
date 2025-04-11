@@ -128,6 +128,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
             addDirectorFilms(film.getId(), film.getDirectors());
         }
+        setFilms(List.of(film));
         return film;
     }
 
