@@ -116,4 +116,4 @@ CREATE TABLE if not EXISTS feeds (
     event_type VARCHAR NOT NULL,
     event_operation VARCHAR NOT NULL
     ON UPDATE CASCADE ON DELETE CASCADE
-);
+    );
