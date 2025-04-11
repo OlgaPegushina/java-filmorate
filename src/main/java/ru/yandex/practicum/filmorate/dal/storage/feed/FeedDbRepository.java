@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.dal.storage.feed;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -13,7 +12,6 @@ import ru.yandex.practicum.filmorate.model.enums.EventType;
 import java.time.Instant;
 import java.util.Collection;
 
-@Slf4j
 @Repository("feedDbSRepository")
 public class FeedDbRepository extends BaseRepository<Feed> implements FeedStorage {
     RowMapper<Feed> mapper = new FeedRowMapper();
