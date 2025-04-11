@@ -113,7 +113,6 @@ CREATE TABLE if not EXISTS feeds (
     user_id BIGINT REFERENCES users (user_id) ON DELETE CASCADE,
     entity_id BIGINT NOT NULL,
     timestamp BIGINT NOT NULL,
-    event_type VARCHAR NOT NULL,
-    event_operation VARCHAR NOT NULL
-    ON UPDATE CASCADE ON DELETE CASCADE
+    event_type VARCHAR(255) NOT NULL,
+    event_operation VARCHAR(255) NOT NULL
     );
