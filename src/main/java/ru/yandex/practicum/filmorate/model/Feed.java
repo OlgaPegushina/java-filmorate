@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
@@ -12,7 +12,7 @@ import javax.validation.constraints.NotNull;
 
 @Getter
 @Builder
-@FieldDefaults
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Feed {
     @NotNull
     Long timestamp;
@@ -26,6 +26,7 @@ public class Feed {
     @NotNull
     Long eventId;
 
+    @NotNull
     @JsonProperty("operation")
     EventOperation eventOperation;
 
