@@ -115,4 +115,5 @@ CREATE TABLE if not EXISTS feeds (
     timestamp BIGINT NOT NULL,
     event_type VARCHAR NOT NULL,
     event_operation VARCHAR NOT NULL
+    ON UPDATE CASCADE ON DELETE CASCADE
 );
