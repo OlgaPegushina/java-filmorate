@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -69,9 +70,14 @@ public class FilmService {
         feedStorage.addEvent(userId, filmId, EventOperation.REMOVE, EventType.LIKE);
     }
 
+
     public Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
         if (sortBy != null) {
-            return filmStorage.findFilmsByDirectorSorted(directorId, sortBy);
+            Collection<Film> films =  filmStorage.findFilmsByDirectorSorted(directorId, sortBy);
+            if (films.isEmpty()) {
+                throw new NotFoundException(String.format("Режиссер с id %d не найден.", directorId));
+            }
+            return films;
         }
         return new ArrayList<>();
     }
