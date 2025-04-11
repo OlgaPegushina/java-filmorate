@@ -5,10 +5,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dal.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.enums.EventOperation;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -22,6 +25,7 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FilmService {
     FilmStorage filmStorage;
+    FeedStorage feedStorage;
 
     public Film create(Film film) {
         validateFilm(film);
@@ -57,10 +61,12 @@ public class FilmService {
 
     public void addLike(Long filmId, Long userId) {
         filmStorage.addLike(filmId, userId);
+        feedStorage.addEvent(userId, filmId, EventOperation.ADD, EventType.LIKE);
     }
 
     public void deleteLike(Long filmId, Long userId) {
         filmStorage.deleteLike(filmId, userId);
+        feedStorage.addEvent(userId, filmId, EventOperation.REMOVE, EventType.LIKE);
     }
 
     public Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {

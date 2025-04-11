@@ -5,13 +5,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.dal.storage.director.DirectorStorage;
+import ru.yandex.practicum.filmorate.dal.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.dal.storage.mpa.MpaRepository;
 import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Feed;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.EventOperation;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -27,7 +30,7 @@ public class UserService {
     UserStorage userStorage;
     FilmStorage filmStorage;
     MpaRepository mpaRepository;
-    DirectorStorage directorStorage;
+    FeedStorage feedStorage;
 
     public User create(User user) {
         validateUser(user);
@@ -59,10 +62,12 @@ public class UserService {
 
     public void addFriend(Long userId, Long friendId) {
         userStorage.addFriend(userId, friendId);
+        feedStorage.addEvent(userId, friendId, EventOperation.ADD, EventType.FRIEND);
     }
 
     public void removeFriend(Long userId, Long friendId) {
         userStorage.removeFriend(userId, friendId);
+        feedStorage.addEvent(userId, friendId, EventOperation.REMOVE, EventType.FRIEND);
     }
 
     public List<User> getMutualFriends(Long userId, Long friendId) {
@@ -91,6 +96,14 @@ public class UserService {
         }
 
         return recommendedFilms;
+    }
+
+    public Collection<Feed> getFeed(Long userId) {
+        User user = userStorage.getById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("Пользователь не найден");
+        }
+        return feedStorage.getFeed(userId);
     }
 
     private void validateUser(User user) {

@@ -107,7 +107,7 @@ public class ReviewDbRepository extends BaseRepository<Review> implements Review
         String sql = "SELECT is_useful FROM review_users WHERE review_id = ? AND user_id = ?";
         List<Boolean> result = jdbc.query(sql,
                 (rs, rowNum) -> rs.getBoolean("is_useful"), reviewId, userId);
-        return result.isEmpty() ? null : result.get(0);
+        return result.isEmpty() ? null : result.getFirst();
     }
 
     private void incrementUseful(Long reviewId) {

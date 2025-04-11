@@ -1,14 +1,19 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dal.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.dal.storage.reviews.ReviewDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
+import ru.yandex.practicum.filmorate.model.enums.EventOperation;
+import ru.yandex.practicum.filmorate.model.enums.EventType;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,19 +21,36 @@ public class ReviewService {
     private final ReviewDbRepository reviewRepository;
     private final UserStorage userStorage;
     private final FilmStorage filmStorage;
+    private final FeedStorage feedStorage;
 
     public Review createReview(Review review) {
         validate(review);
-        return reviewRepository.create(review);
+        Review createReview = reviewRepository.create(review);
+        feedStorage.addEvent(createReview.getUserId(), createReview.getReviewId(), EventOperation.ADD, EventType.REVIEW);
+        return createReview;
     }
 
     public Review updateReview(Review review) {
         validate(review);
-        return reviewRepository.update(review);
+        Review updateReview = reviewRepository.update(review);
+        feedStorage.addEvent(updateReview.getUserId(), updateReview.getReviewId(), EventOperation.UPDATE, EventType.REVIEW);
+        return updateReview;
     }
 
     public void deleteReview(Long id) {
-        reviewRepository.deleteById(id);
+        Optional<Review> review = reviewRepository.findById(id);
+        if (review.isPresent()) {
+            Review actualReview = review.get();
+            Long userId = actualReview.getUserId();
+            try {
+                feedStorage.addEvent(userId, id, EventOperation.REMOVE, EventType.REVIEW);
+                reviewRepository.deleteById(id);
+            } catch (DataAccessException e) {
+                throw new RuntimeException("Ошибка при удалении отзыва", e);
+            }
+        } else {
+            throw new NotFoundException("Отзыв не найден");
+        }
     }
 
     public Review getReviewById(Long id) {
