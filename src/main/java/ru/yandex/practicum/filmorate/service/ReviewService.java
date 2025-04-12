@@ -32,7 +32,8 @@ public class ReviewService {
 
     public Review updateReview(Review review) {
         validate(review);
-        Review updateReview = reviewRepository.update(review);
+        Review updateReview = reviewRepository.update(review)
+                .orElseThrow(() -> new NotFoundException(String.format("Отзыв с id %d не найден.", review.getReviewId())));
         feedStorage.addEvent(updateReview.getUserId(), updateReview.getReviewId(), EventOperation.UPDATE, EventType.REVIEW);
         return updateReview;
     }

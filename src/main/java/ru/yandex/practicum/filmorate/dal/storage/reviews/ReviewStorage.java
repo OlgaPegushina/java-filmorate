@@ -8,7 +8,7 @@ import java.util.Optional;
 public interface ReviewStorage {
     Review create(Review review);
 
-    Review update(Review review);
+    Optional<Review> update(Review review);
 
     void deleteById(Long reviewId);
 

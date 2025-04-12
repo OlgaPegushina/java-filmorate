@@ -33,13 +33,14 @@ public class ReviewDbRepository extends BaseRepository<Review> implements Review
     }
 
     @Override
-    public Review update(Review review) {
+    public Optional<Review> update(Review review) {
         String sql = "UPDATE review SET content = ?, is_positive = ? WHERE review_id = ?";
         super.update(sql,
                 review.getContent(),
                 review.getIsPositive(),
                 review.getReviewId());
-        return review;
+
+        return findById(review.getReviewId());
     }
 
     @Override
@@ -49,10 +50,8 @@ public class ReviewDbRepository extends BaseRepository<Review> implements Review
 
     @Override
     public Optional<Review> findById(Long reviewId) {
-        return jdbc.query(
-                        "SELECT * FROM review WHERE review_id = ?", mapper, reviewId)
-                .stream()
-                .findFirst();
+        String query = "SELECT * FROM review WHERE review_id = ?";
+        return findOne(query, mapper, reviewId);
     }
 
     @Override
