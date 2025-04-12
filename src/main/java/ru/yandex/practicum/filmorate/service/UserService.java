@@ -3,12 +3,12 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.dal.storage.mpa.MpaRepository;
 import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Feed;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -45,7 +44,8 @@ public class UserService {
     }
 
     public User getById(Long userId) {
-        return userStorage.getById(userId);
+        return userStorage.getById(userId)
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id %d не найден.", userId)));
     }
 
     public Collection<User> getAllValues() {
@@ -79,7 +79,7 @@ public class UserService {
     }
 
     public List<Film> getRecommendations(Long userId) {
-        userStorage.getById(userId); // Проверка существования пользователя
+        userStorage.validateUser(userId);
 
         Set<Long> likedFilms = filmStorage.getLikedFilmIdsByUser(userId);
         if (likedFilms.isEmpty()) return List.of();
@@ -99,10 +99,7 @@ public class UserService {
     }
 
     public Collection<Feed> getFeed(Long userId) {
-        User user = userStorage.getById(userId);
-        if (user == null) {
-            throw new IllegalArgumentException("Пользователь не найден");
-        }
+        getById(userId);
         return feedStorage.getFeed(userId);
     }
 

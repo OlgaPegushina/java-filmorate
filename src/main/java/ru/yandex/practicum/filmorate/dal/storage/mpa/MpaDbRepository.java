@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.dal.storage.mpa;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -16,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class MpaDbRepository implements MpaRepository {
@@ -26,7 +24,7 @@ public class MpaDbRepository implements MpaRepository {
     @Override
     public RatingMpa getMpaById(int mpaId) {
         Optional<RatingMpa> mpa = Optional.ofNullable(jdbc.queryForObject("SELECT * FROM rating_mpa " +
-                "WHERE rating_id = ?", mapper, mpaId));
+                                                                          "WHERE rating_id = ?", mapper, mpaId));
         if (mpa.isPresent()) {
             return mpa.get();
         } else {
@@ -36,9 +34,7 @@ public class MpaDbRepository implements MpaRepository {
 
     @Override
     public Collection<RatingMpa> getAllMpa() {
-        log.debug("getAll().");
         List<RatingMpa> result = jdbc.query("SELECT * FROM rating_mpa ORDER BY rating_id", mapper);
-        log.trace("Возвращены все рейтинги MPA: {}.", result);
         return result;
     }
 }

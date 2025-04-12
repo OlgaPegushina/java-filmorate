@@ -16,6 +16,7 @@ import ru.yandex.practicum.filmorate.dal.storage.film.FilmDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.genre.GenreDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.mpa.MpaDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.user.UserDbRepository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -76,7 +77,8 @@ public class FilmDbRepositoryTest {
     void getByIdTest() {
         Film film = createFilm();
         Film newFilm = filmDbRepository.create(film);
-        Film filmById = filmDbRepository.getById(newFilm.getId());
+        Film filmById = filmDbRepository.getById(newFilm.getId())
+                .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", newFilm.getId())));
 
         assertThat(filmById).hasFieldOrPropertyWithValue("id", 1L);
         assertThat(filmById).hasFieldOrPropertyWithValue("name", "name");
@@ -120,7 +122,8 @@ public class FilmDbRepositoryTest {
                 .mpa(mpaDbRepository.getMpaById(3))
                 .build();
         filmDbRepository.update(filmUpdate);
-        film = filmDbRepository.getById(1L);
+        film = filmDbRepository.getById(1L)
+                .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", 1L)));
 
         assertThat(film).hasFieldOrPropertyWithValue("id", 1L);
         assertThat(film).hasFieldOrPropertyWithValue("name", "name2");

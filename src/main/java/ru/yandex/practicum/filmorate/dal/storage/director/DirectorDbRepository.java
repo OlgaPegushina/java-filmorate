@@ -9,12 +9,12 @@ import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dal.mappers.DirectorRowMapper;
 import ru.yandex.practicum.filmorate.dal.storage.BaseRepository;
 import ru.yandex.practicum.filmorate.exception.InternalServerException;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository("directorDbRepository")
@@ -39,10 +39,9 @@ public class DirectorDbRepository extends BaseRepository<Director> implements Di
     }
 
     @Override
-    public Director getById(Long id) {
+    public Optional<Director> getById(Long id) {
         String query = "SELECT * FROM director WHERE director_id = ?";
-        return findOne(query, mapper, id)
-                .orElseThrow(() -> new NotFoundException(String.format("Режиссер с id %d не найден.", id)));
+        return findOne(query, mapper, id);
     }
 
     @Override

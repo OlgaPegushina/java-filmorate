@@ -1,5 +1,7 @@
 package ru.yandex.practicum.filmorate.dal.storage.reviews;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -11,8 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReviewDbRepository extends BaseRepository<Review> implements ReviewStorage {
-    private final RowMapper<Review> mapper = new ReviewRowMapper();
+    RowMapper<Review> mapper = new ReviewRowMapper();
 
     public ReviewDbRepository(JdbcTemplate jdbc) {
         super(jdbc);

@@ -16,4 +16,6 @@ public interface UserStorage extends Storage<User> {
     List<User> getMutualFriends(Long userId, Long friendId);
 
     List<User> getAllFriends(Long userId);
+
+    void validateUser(Long userId);
 }

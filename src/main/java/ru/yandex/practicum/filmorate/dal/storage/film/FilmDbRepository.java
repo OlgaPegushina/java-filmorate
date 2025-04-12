@@ -48,7 +48,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         RatingMpa mpa = mpaDbRepository.getMpaById(film.getMpa().getId());
 
         String query = "INSERT INTO film(name, description, release_date, " +
-                "duration_in_minutes, rating_id) VALUES (?, ?, ?, ?, ?)";
+                       "duration_in_minutes, rating_id) VALUES (?, ?, ?, ?, ?)";
         long id = super.create(query,
                 film.getName(),
                 film.getDescription(),
@@ -72,18 +72,13 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     }
 
     @Override
-    public Film getById(Long id) {
+    public Optional<Film> getById(Long id) {
         String query = "SELECT * FROM film WHERE film_id = ?";
-        Film film = findOne(query, mapper, id)
-                .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", id)));
-        Set<Long> likes = getLikeUserIds(id);
-        film.setLikes(likes);
-        List<Genre> genres = getGenre(id);
-        film.setGenres(Objects.requireNonNullElseGet(genres, ArrayList::new));
-        film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-        List<Director> directors = findDirectors(id);
-        film.setDirectors(directors);
-        return film;
+        Optional<Film> optionalFilm = findOne(query, mapper, id);
+
+        optionalFilm.ifPresent(film -> setFilms(List.of(film)));
+
+        return optionalFilm;
     }
 
     @Override
@@ -103,7 +98,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     public Film update(Film film) {
         RatingMpa mpa = mpaDbRepository.getMpaById(film.getMpa().getId());
         String query = "UPDATE film SET name = ?, description = ?, release_date = ?, duration_in_minutes = ?, " +
-                "rating_id = ? WHERE film_id = ?";
+                       "rating_id = ? WHERE film_id = ?";
         super.update(query,
                 film.getName(),
                 film.getDescription(),
@@ -152,17 +147,17 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     @Override
     public List<Genre> getGenre(long id) {
         String query = "SELECT g.genre_id, g.name FROM film_genre fg " +
-                "INNER JOIN genre g ON fg.genre_id = g.genre_id " +
-                "WHERE fg.film_id = ?";
+                       "INNER JOIN genre g ON fg.genre_id = g.genre_id " +
+                       "WHERE fg.film_id = ?";
         return new ArrayList<>(jdbc.query(query, new GenreRowMapper(), id));
     }
 
     @Override
     public RatingMpa getRatingMpa(long filmId) {
         String query = "SELECT r.rating_id, r.name " +
-                "FROM film f " +
-                "INNER JOIN rating_mpa r ON f.rating_id = r.rating_id " +
-                "WHERE f.film_id = ?";
+                       "FROM film f " +
+                       "INNER JOIN rating_mpa r ON f.rating_id = r.rating_id " +
+                       "WHERE f.film_id = ?";
 
         try {
             return jdbc.queryForObject(query, new RatingMpaRowMapper(), filmId);
@@ -226,8 +221,8 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
 
     @Override
     public void deleteLike(Long filmId, Long userId) {
-        getById(filmId);
-        userStorage.getById(userId);
+        validateFilm(filmId);
+        userStorage.validateUser(userId);
         String query = "DELETE FROM film_users WHERE film_id = ? and user_id = ?";
         super.update(query, filmId, userId);
     }
@@ -235,13 +230,13 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     @Override
     public List<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
         String query = "SELECT f.*, COUNT(fu.user_id) AS like_count " +
-                "FROM film f " +
-                "JOIN director_film df ON f.film_id = df.film_id " +
-                "LEFT JOIN film_users fu ON f.film_id = fu.film_id " +
-                "WHERE df.director_id = ? " +
-                "GROUP BY f.film_id " +
-                "ORDER BY " +
-                (sortBy.equals("likes") ? "like_count DESC" : "f.release_date");
+                       "FROM film f " +
+                       "JOIN director_film df ON f.film_id = df.film_id " +
+                       "LEFT JOIN film_users fu ON f.film_id = fu.film_id " +
+                       "WHERE df.director_id = ? " +
+                       "GROUP BY f.film_id " +
+                       "ORDER BY " +
+                       (sortBy.equals("likes") ? "like_count DESC" : "f.release_date");
 
         List<Film> films = findMany(query, mapper, directorId);
         return setFilms(films);
@@ -329,6 +324,12 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         return jdbc.query(sql, mapper, params.toArray());
     }
 
+    @Override
+    public void validateFilm(Long filmId) {
+        getById(filmId)
+                .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", filmId)));
+    }
+
     private List<Film> setFilms(List<Film> films) {
         for (Film film : films) {
             film.setLikes(getLikeUserIds(film.getId()));
@@ -349,8 +350,8 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         for (Genre genre : genres) {
             genreDbRepository.getGenreById(genre.getId());
             String query = "MERGE INTO film_genre AS target " +
-                    "KEY (film_id, genre_id) " +
-                    "VALUES (?, ?)";
+                           "KEY (film_id, genre_id) " +
+                           "VALUES (?, ?)";
             jdbc.update(query, filmId, genre.getId());
         }
         return true;
@@ -358,10 +359,11 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
 
     private boolean addDirectorFilms(Long filmId, List<Director> directors) {
         for (Director director : directors) {
-            directorDbRepository.getById(director.getId());
+            directorDbRepository.getById(director.getId())
+                    .orElseThrow(() -> new NotFoundException(String.format("Режиссер с id %d не найден.", director.getId())));
             String query = "MERGE INTO director_film AS target " +
-                    "KEY (director_id, film_id) " +
-                    "VALUES (?, ?)";
+                           "KEY (director_id, film_id) " +
+                           "VALUES (?, ?)";
             jdbc.update(query, director.getId(), filmId);
         }
         return true;
@@ -375,8 +377,8 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
 
     private List<Director> findDirectors(long film_id) {
         String query = "SELECT d.director_id, d.name FROM director_film df " +
-                "INNER JOIN director d ON df.director_id = d.director_id " +
-                "WHERE df.film_id = ?";
+                       "INNER JOIN director d ON df.director_id = d.director_id " +
+                       "WHERE df.film_id = ?";
         return new ArrayList<>(jdbc.query(query, new DirectorRowMapper(), film_id));
     }
 
@@ -387,9 +389,9 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 .toList();
 
         String query = "SELECT fg.film_id, g.genre_id, g.name " +
-                "FROM film_genre fg " +
-                "JOIN genre g ON g.genre_id = fg.genre_id " +
-                "WHERE fg.film_id IN (%s)";
+                       "FROM film_genre fg " +
+                       "JOIN genre g ON g.genre_id = fg.genre_id " +
+                       "WHERE fg.film_id IN (%s)";
 
         jdbc.query(String.format(query, String.join(",", ids)), rs -> {
             Genre genre = Genre.builder()

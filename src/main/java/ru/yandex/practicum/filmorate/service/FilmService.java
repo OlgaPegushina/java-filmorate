@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
@@ -20,7 +19,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -41,7 +39,8 @@ public class FilmService {
     }
 
     public Film getById(Long filmId) {
-        return filmStorage.getById(filmId);
+        return filmStorage.getById(filmId)
+                .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", filmId)));
     }
 
     public Collection<Film> getAllValues() {

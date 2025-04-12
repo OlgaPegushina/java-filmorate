@@ -1,5 +1,7 @@
 package ru.yandex.practicum.filmorate.dal.storage.feed;
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -13,6 +15,7 @@ import java.time.Instant;
 import java.util.Collection;
 
 @Repository("feedDbSRepository")
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FeedDbRepository extends BaseRepository<Feed> implements FeedStorage {
     RowMapper<Feed> mapper = new FeedRowMapper();
 

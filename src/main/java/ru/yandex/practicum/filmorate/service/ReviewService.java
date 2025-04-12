@@ -78,7 +78,7 @@ public class ReviewService {
     }
 
     private void validate(Review review) {
-        userStorage.getById(review.getUserId());
-        filmStorage.getById(review.getFilmId());
+        userStorage.validateUser(review.getUserId());
+        filmStorage.validateFilm(review.getFilmId());
     }
 }

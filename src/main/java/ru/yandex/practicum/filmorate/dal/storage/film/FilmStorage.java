@@ -36,4 +36,6 @@ public interface FilmStorage extends Storage<Film> {
     RatingMpa getRatingMpa(long filmId);
 
     Collection<Film> getCommonFilms(Integer userId, Integer friendId);
+
+    void validateFilm(Long filmId);
 }
