@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.storage.feed.FeedStorage;
@@ -17,11 +19,12 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReviewService {
-    private final ReviewDbRepository reviewRepository;
-    private final UserStorage userStorage;
-    private final FilmStorage filmStorage;
-    private final FeedStorage feedStorage;
+    ReviewDbRepository reviewRepository;
+    UserStorage userStorage;
+    FilmStorage filmStorage;
+    FeedStorage feedStorage;
 
     public Review createReview(Review review) {
         validate(review);
