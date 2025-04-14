@@ -4,10 +4,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dal.storage.director.DirectorStorage;
 import ru.yandex.practicum.filmorate.dal.storage.feed.FeedStorage;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.dal.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.enums.EventOperation;
@@ -25,6 +28,8 @@ import java.util.Map;
 public class FilmService {
     FilmStorage filmStorage;
     FeedStorage feedStorage;
+    UserStorage userStorage;
+    DirectorStorage directorStorage;
 
     public Film create(Film film) {
         validateFilm(film);
@@ -45,10 +50,6 @@ public class FilmService {
 
     public Collection<Film> getAllValues() {
         return filmStorage.getAllValues();
-    }
-
-    public Map<Long, Film> getAll() {
-        return filmStorage.getAll();
     }
 
     public void delete(Long id) {
@@ -72,11 +73,10 @@ public class FilmService {
 
     public Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
         if (sortBy != null) {
-            Collection<Film> films = filmStorage.findFilmsByDirectorSorted(directorId, sortBy);
-            if (films.isEmpty()) {
-                throw new NotFoundException(String.format("Режиссер с id %d не найден.", directorId));
-            }
-            return films;
+            Director director = directorStorage.getById(directorId)
+                    .orElseThrow(() -> new NotFoundException(String.format("Режиссер с id %d не найден.", directorId)));
+
+            return filmStorage.findFilmsByDirectorSorted(director.getId(), sortBy);
         }
         return new ArrayList<>();
     }
@@ -106,17 +106,22 @@ public class FilmService {
         }
     }
 
-    public Collection<Film> getCommonFilms(Integer userId, Integer friendId) {
+    public Collection<Film> getCommonFilms(Long userId, Long friendId) {
+        validateUserExists(userId);
+        validateUserExists(friendId);
         Collection<Film> films = filmStorage.getCommonFilms(userId, friendId);
-        if (films.isEmpty()) {
-            return films;
-        }
-        Map<Integer, List<Genre>> filmGenresMap = filmStorage.getAllFilmGenres(films);
+
+        Map<Long, List<Genre>> filmGenresMap = filmStorage.getAllFilmGenres(films);
         films.forEach(film -> {
             long filmId = film.getId();
-            film.setGenres(filmGenresMap.getOrDefault((int) filmId, new ArrayList<>()));
+            film.setGenres(filmGenresMap.getOrDefault(filmId, new ArrayList<>()));
             film.setMpa(filmStorage.getRatingMpa(filmId));
         });
         return films;
+    }
+
+    private void validateUserExists(Long userId) {
+        userStorage.getById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + userId));
     }
 }

@@ -382,8 +382,8 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         return new ArrayList<>(jdbc.query(query, new DirectorRowMapper(), film_id));
     }
 
-    public Map<Integer, List<Genre>> getAllFilmGenres(Collection<Film> films) {
-        Map<Integer, List<Genre>> filmGenreMap = new HashMap<>();
+    public Map<Long, List<Genre>> getAllFilmGenres(Collection<Film> films) {
+        Map<Long, List<Genre>> filmGenreMap = new HashMap<>();
         Collection<String> ids = films.stream()
                 .map(film -> String.valueOf(film.getId()))
                 .toList();
@@ -395,11 +395,11 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
 
         jdbc.query(String.format(query, String.join(",", ids)), rs -> {
             Genre genre = Genre.builder()
-                    .id(rs.getInt("genre_id"))
+                    .id(rs.getLong("genre_id"))
                     .name(rs.getString("name"))
                     .build();
 
-            Integer filmId = rs.getInt("film_id");
+            long filmId = rs.getInt("film_id");
 
             filmGenreMap.putIfAbsent(filmId, new ArrayList<>());
             filmGenreMap.get(filmId).add(genre);
@@ -408,7 +408,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     }
 
 
-    public Collection<Film> getCommonFilms(Integer userId, Integer friendId) {
+    public Collection<Film> getCommonFilms(Long userId, Long friendId) {
         String query = """
                 SELECT f.*
                 FROM film_users fu1

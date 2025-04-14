@@ -10,7 +10,6 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Director;
 
 import java.util.Collection;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -19,7 +18,6 @@ public class DirectorService {
     DirectorStorage directorStorage;
 
     public Director create(Director director) {
-        validateDirector(director);
         return directorStorage.create(director);
     }
 
@@ -39,17 +37,7 @@ public class DirectorService {
         return directorStorage.getAllValues();
     }
 
-    public Map<Long, Director> findAll() {
-        return directorStorage.getAll();
-    }
-
     public void delete(Long id) {
         directorStorage.deleteById(id);
-    }
-
-    private void validateDirector(Director director) {
-        if (director.getName() == null || director.getName().isBlank()) {
-            throw new ValidationException("Имя не должно быть пустым");
-        }
     }
 }

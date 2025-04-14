@@ -10,7 +10,6 @@ import ru.yandex.practicum.filmorate.dal.mappers.GenreRowMapper;
 import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,14 +20,12 @@ public class GenreDbRepository implements GenreRepository {
     JdbcTemplate jdbc;
 
     @Override
-    public Optional<Genre> getGenreById(int genreId) {
-        Optional<Genre> genre = Optional.ofNullable(jdbc.queryForObject("SELECT * FROM genre WHERE genre_id = ?", mapper, genreId));
-        return genre;
+    public Optional<Genre> getGenreById(Long genreId) {
+        return Optional.ofNullable(jdbc.queryForObject("SELECT * FROM genre WHERE genre_id = ?", mapper, genreId));
     }
 
     @Override
     public Collection<Genre> getAllGenres() {
-        List<Genre> result = jdbc.query("SELECT * FROM genre ORDER BY genre_id", mapper);
-        return result;
+        return jdbc.query("SELECT * FROM genre ORDER BY genre_id", mapper);
     }
 }

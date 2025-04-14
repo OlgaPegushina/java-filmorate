@@ -37,12 +37,12 @@ public class GenreDbRepositoryTest {
 
     @Test
     public void getGenreById() {
-        Optional<Genre> genreOptional = genreDbRepository.getGenreById(1);
+        Optional<Genre> genreOptional = genreDbRepository.getGenreById(1L);
 
         assertThat(genreOptional)
                 .isPresent()
                 .hasValueSatisfying(mpa -> {
-                    assertThat(mpa).hasFieldOrPropertyWithValue("id", 1);
+                    assertThat(mpa).hasFieldOrPropertyWithValue("id", 1L);
                     assertThat(mpa).hasFieldOrPropertyWithValue("name", "Комедия");
                 });
     }

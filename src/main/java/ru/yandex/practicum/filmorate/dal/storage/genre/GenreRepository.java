@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 public interface GenreRepository {
-    Optional<Genre> getGenreById(int genreId);
+    Optional<Genre> getGenreById(Long genreId);
 
     Collection<Genre> getAllGenres();
 }

@@ -15,22 +15,22 @@ public class ReviewsController {
     private final ReviewService reviewService;
 
     @PostMapping
-    Review create(@Valid @RequestBody Review review) {
+    public Review create(@Valid @RequestBody Review review) {
         return reviewService.createReview(review);
     }
 
     @GetMapping("{id}")
-    Review findById(@PathVariable Long id) {
+    public Review findById(@PathVariable Long id) {
         return reviewService.getReviewById(id);
     }
 
     @PutMapping
-    Review update(@RequestBody Review review) {
+    public Review update(@RequestBody Review review) {
         return reviewService.updateReview(review);
     }
 
     @DeleteMapping("{id}")
-    void delete(@PathVariable Long id) {
+    public void delete(@PathVariable Long id) {
         reviewService.deleteReview(id);
     }
 
@@ -39,7 +39,7 @@ public class ReviewsController {
             @RequestParam(required = false) Long filmId,
             @RequestParam(defaultValue = "10") int count
     ) {
-       return reviewService.getReviews(filmId, count);
+        return reviewService.getReviews(filmId, count);
     }
 
     @PutMapping("/{id}/like/{userId}")

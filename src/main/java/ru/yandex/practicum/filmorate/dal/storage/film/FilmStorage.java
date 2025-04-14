@@ -31,11 +31,11 @@ public interface FilmStorage extends Storage<Film> {
 
     List<Film> findRecommendedFilmsForUser(Set<Long> similarUserIds, Set<Long> excludedFilmIds);
 
-    Map<Integer, List<Genre>> getAllFilmGenres(Collection<Film> films);
+    Map<Long, List<Genre>> getAllFilmGenres(Collection<Film> films);
 
     RatingMpa getRatingMpa(long filmId);
 
-    Collection<Film> getCommonFilms(Integer userId, Integer friendId);
+    Collection<Film> getCommonFilms(Long userId, Long friendId);
 
     void validateFilm(Long filmId);
 }

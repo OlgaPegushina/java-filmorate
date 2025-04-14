@@ -21,7 +21,7 @@ public class GenreService {
         return genreRepository.getAllGenres();
     }
 
-    public Genre getGenreById(@PathVariable("id") int id) {
+    public Genre getGenreById(@PathVariable("id") Long id) {
         return genreRepository.getGenreById(id)
                 .orElseThrow(() -> new NotFoundException(String.format("Жанр с ID %d не найден.", id)));
     }
