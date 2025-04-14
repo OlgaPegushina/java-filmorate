@@ -15,7 +15,6 @@ import ru.yandex.practicum.filmorate.model.enums.EventOperation;
 import ru.yandex.practicum.filmorate.model.enums.EventType;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,14 +26,14 @@ public class ReviewService {
     FeedStorage feedStorage;
 
     public Review createReview(Review review) {
-        validate(review);
+        validateReviewAndUserExist(review);
         Review createReview = reviewRepository.create(review);
         feedStorage.addEvent(createReview.getUserId(), createReview.getReviewId(), EventOperation.ADD, EventType.REVIEW);
         return createReview;
     }
 
     public Review updateReview(Review review) {
-        validate(review);
+        validateReviewAndUserExist(review);
         Review updateReview = reviewRepository.update(review)
                 .orElseThrow(() -> new NotFoundException(String.format("Отзыв с id %d не найден.", review.getReviewId())));
         feedStorage.addEvent(updateReview.getUserId(), updateReview.getReviewId(), EventOperation.UPDATE, EventType.REVIEW);
@@ -42,18 +41,14 @@ public class ReviewService {
     }
 
     public void deleteReview(Long id) {
-        Optional<Review> review = reviewRepository.findById(id);
-        if (review.isPresent()) {
-            Review actualReview = review.get();
-            Long userId = actualReview.getUserId();
-            try {
-                feedStorage.addEvent(userId, id, EventOperation.REMOVE, EventType.REVIEW);
-                reviewRepository.deleteById(id);
-            } catch (DataAccessException e) {
-                throw new RuntimeException("Ошибка при удалении отзыва", e);
-            }
-        } else {
-            throw new NotFoundException("Отзыв не найден");
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Отзыв не найден: " + id));
+        Long userId = review.getUserId();
+        try {
+            feedStorage.addEvent(userId, id, EventOperation.REMOVE, EventType.REVIEW);
+            reviewRepository.deleteById(id);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Ошибка при удалении отзыва", e);
         }
     }
 
@@ -63,25 +58,36 @@ public class ReviewService {
     }
 
     public List<Review> getReviews(Long filmId, int count) {
-        return (filmId != null)
-                ? reviewRepository.findAllByFilmId(filmId, count)
-                : reviewRepository.findAll(count);
+        if (filmId != null) {
+            filmStorage.validateFilm(filmId);
+            return reviewRepository.findAllByFilmId(filmId, count);
+        } else {
+            return reviewRepository.findAll(count);
+        }
     }
 
     public void addLike(Long reviewId, Long userId) {
+        validateReactionEntities(reviewId, userId);
         reviewRepository.addLike(reviewId, userId);
     }
 
     public void addDislike(Long reviewId, Long userId) {
+        validateReactionEntities(reviewId, userId);
         reviewRepository.addDislike(reviewId, userId);
     }
 
     public void removeReaction(Long reviewId, Long userId) {
+        validateReactionEntities(reviewId, userId);
         reviewRepository.removeReaction(reviewId, userId);
     }
 
-    private void validate(Review review) {
+    private void validateReviewAndUserExist(Review review) {
         userStorage.validateUser(review.getUserId());
         filmStorage.validateFilm(review.getFilmId());
+    }
+
+    private void validateReactionEntities(Long reviewId, Long userId) {
+        reviewRepository.findById(reviewId);
+        userStorage.validateUser(userId);
     }
 }
