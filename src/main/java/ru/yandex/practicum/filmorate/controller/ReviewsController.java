@@ -1,7 +1,9 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewService;
@@ -11,8 +13,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/reviews")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ReviewsController {
-    private final ReviewService reviewService;
+    ReviewService reviewService;
 
     @PostMapping
     public Review create(@Valid @RequestBody Review review) {

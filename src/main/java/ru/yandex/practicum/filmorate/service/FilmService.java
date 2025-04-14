@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.enums.EventOperation;
 import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.FilmSortBy;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -70,13 +71,16 @@ public class FilmService {
         feedStorage.addEvent(userId, filmId, EventOperation.REMOVE, EventType.LIKE);
     }
 
-
     public Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
         if (sortBy != null) {
             Director director = directorStorage.getById(directorId)
                     .orElseThrow(() -> new NotFoundException(String.format("Режиссер с id %d не найден.", directorId)));
-
-            return filmStorage.findFilmsByDirectorSorted(director.getId(), sortBy);
+            try {
+                FilmSortBy filmSortBy = FilmSortBy.valueOf(sortBy.toUpperCase());
+                return filmStorage.findFilmsByDirectorSorted(director.getId(), filmSortBy);
+            } catch (IllegalArgumentException e) {
+                throw new ValidationException(String.format("Неправильное значение для сортировки: %s", sortBy));
+            }
         }
         return new ArrayList<>();
     }
@@ -122,6 +126,6 @@ public class FilmService {
 
     private void validateUserExists(Long userId) {
         userStorage.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + userId));
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id %d не найден: ", userId)));
     }
 }

@@ -4,6 +4,7 @@ import ru.yandex.practicum.filmorate.dal.storage.Storage;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.RatingMpa;
+import ru.yandex.practicum.filmorate.model.enums.FilmSortBy;
 
 import java.util.Collection;
 import java.util.List;
@@ -21,7 +22,7 @@ public interface FilmStorage extends Storage<Film> {
 
     void deleteLike(Long filmId, Long userId);
 
-    Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy);
+    Collection<Film> findFilmsByDirectorSorted(Long directorId, FilmSortBy sortBy);
 
     Collection<Film> searchFilms(String strQuery, String searchIn);
 

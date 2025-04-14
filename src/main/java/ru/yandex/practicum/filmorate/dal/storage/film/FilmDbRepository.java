@@ -19,6 +19,7 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.RatingMpa;
+import ru.yandex.practicum.filmorate.model.enums.FilmSortBy;
 
 import java.sql.Date;
 import java.util.*;
@@ -228,17 +229,21 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     }
 
     @Override
-    public List<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
-        String query = "SELECT f.*, COUNT(fu.user_id) AS like_count " +
-                       "FROM film f " +
-                       "JOIN director_film df ON f.film_id = df.film_id " +
-                       "LEFT JOIN film_users fu ON f.film_id = fu.film_id " +
-                       "WHERE df.director_id = ? " +
-                       "GROUP BY f.film_id " +
-                       "ORDER BY " +
-                       (sortBy.equals("likes") ? "like_count DESC" : "f.release_date");
+    public List<Film> findFilmsByDirectorSorted(Long directorId, FilmSortBy sortBy) {
+        StringBuilder query = new StringBuilder("SELECT f.*, COUNT(fu.user_id) AS like_count ");
+        query.append("FROM film f ");
+        query.append("JOIN director_film df ON f.film_id = df.film_id ");
+        query.append("LEFT JOIN film_users fu ON f.film_id = fu.film_id ");
+        query.append("WHERE df.director_id = ? ");
+        query.append("GROUP BY f.film_id ");
+        query.append("ORDER BY ");
+        if (FilmSortBy.LIKES.equals((sortBy))) {
+            query.append("like_count DESC");
+        } else {
+            query.append("f.release_date");
+        }
 
-        List<Film> films = findMany(query, mapper, directorId);
+        List<Film> films = findMany(query.toString(), mapper, directorId);
         return setFilms(films);
     }
 

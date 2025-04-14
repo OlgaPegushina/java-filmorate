@@ -42,7 +42,7 @@ public class ReviewService {
 
     public void deleteReview(Long id) {
         Review review = reviewRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Отзыв не найден: " + id));
+                .orElseThrow(() -> new NotFoundException(String.format("Отзыв с id %d не найден: ", id)));
         Long userId = review.getUserId();
         try {
             feedStorage.addEvent(userId, id, EventOperation.REMOVE, EventType.REVIEW);
@@ -54,7 +54,7 @@ public class ReviewService {
 
     public Review getReviewById(Long id) {
         return reviewRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Отзыв не найден: " + id));
+                .orElseThrow(() -> new NotFoundException(String.format("Отзыв с id %d не найден: ", id)));
     }
 
     public List<Review> getReviews(Long filmId, int count) {
