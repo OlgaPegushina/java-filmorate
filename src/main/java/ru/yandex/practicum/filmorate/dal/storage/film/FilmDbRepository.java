@@ -7,7 +7,10 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.dal.mappers.*;
+import ru.yandex.practicum.filmorate.dal.mappers.FilmRowMapper;
+import ru.yandex.practicum.filmorate.dal.mappers.GenreRowMapper;
+import ru.yandex.practicum.filmorate.dal.mappers.LikeUserIdsRowMapper;
+import ru.yandex.practicum.filmorate.dal.mappers.RatingMpaRowMapper;
 import ru.yandex.practicum.filmorate.dal.storage.BaseRepository;
 import ru.yandex.practicum.filmorate.dal.storage.director.DirectorDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.genre.GenreDbRepository;
@@ -50,7 +53,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         RatingMpa mpa = mpaDbRepository.getMpaById(film.getMpa().getId());
 
         String query = "INSERT INTO film(name, description, release_date, " +
-                       "duration_in_minutes, rating_id) VALUES (?, ?, ?, ?, ?)";
+                "duration_in_minutes, rating_id) VALUES (?, ?, ?, ?, ?)";
         long id = super.create(query,
                 film.getName(),
                 film.getDescription(),
@@ -100,7 +103,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     public Film update(Film film) {
         RatingMpa mpa = mpaDbRepository.getMpaById(film.getMpa().getId());
         String query = "UPDATE film SET name = ?, description = ?, release_date = ?, duration_in_minutes = ?, " +
-                       "rating_id = ? WHERE film_id = ?";
+                "rating_id = ? WHERE film_id = ?";
         super.update(query,
                 film.getName(),
                 film.getDescription(),
@@ -149,17 +152,17 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     @Override
     public List<Genre> getGenre(long id) {
         String query = "SELECT g.genre_id, g.name FROM film_genre fg " +
-                       "INNER JOIN genre g ON fg.genre_id = g.genre_id " +
-                       "WHERE fg.film_id = ?";
+                "INNER JOIN genre g ON fg.genre_id = g.genre_id " +
+                "WHERE fg.film_id = ?";
         return new ArrayList<>(jdbc.query(query, new GenreRowMapper(), id));
     }
 
     @Override
     public RatingMpa getRatingMpa(long filmId) {
         String query = "SELECT r.rating_id, r.name " +
-                       "FROM film f " +
-                       "INNER JOIN rating_mpa r ON f.rating_id = r.rating_id " +
-                       "WHERE f.film_id = ?";
+                "FROM film f " +
+                "INNER JOIN rating_mpa r ON f.rating_id = r.rating_id " +
+                "WHERE f.film_id = ?";
 
         try {
             return jdbc.queryForObject(query, new RatingMpaRowMapper(), filmId);
@@ -340,58 +343,6 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", filmId)));
     }
 
-    private List<Film> setFilms(List<Film> films) {
-        for (Film film : films) {
-            film.setLikes(getLikeUserIds(film.getId()));
-            film.setGenres(getGenre(film.getId()));
-            film.setMpa(mpaDbRepository.getMpaById(film.getMpa().getId()));
-            film.setDirectors(findDirectors(film.getId()));
-        }
-        return films;
-    }
-
-    private boolean deleteFilmGenres(Long filmId) {
-        String query = "DELETE FROM film_genre WHERE film_id = ?";
-        int rowsDeleted = jdbc.update(query, filmId);
-        return rowsDeleted > 0;
-    }
-
-    private boolean addFilmGenres(Long filmId, List<Genre> genres) {
-        for (Genre genre : genres) {
-            genreDbRepository.getGenreById(genre.getId());
-            String query = "MERGE INTO film_genre AS target " +
-                           "KEY (film_id, genre_id) " +
-                           "VALUES (?, ?)";
-            jdbc.update(query, filmId, genre.getId());
-        }
-        return true;
-    }
-
-    private boolean addDirectorFilms(Long filmId, List<Director> directors) {
-        for (Director director : directors) {
-            directorDbRepository.getById(director.getId())
-                    .orElseThrow(() -> new NotFoundException(String.format("Режиссер с id %d не найден.", director.getId())));
-            String query = "MERGE INTO director_film AS target " +
-                           "KEY (director_id, film_id) " +
-                           "VALUES (?, ?)";
-            jdbc.update(query, director.getId(), filmId);
-        }
-        return true;
-    }
-
-    private boolean deleteDirectorFilms(Long filmId) {
-        String query = "DELETE FROM director_film WHERE film_id = ?";
-        int rowsDeleted = jdbc.update(query, filmId);
-        return rowsDeleted > 0;
-    }
-
-    private List<Director> findDirectors(long film_id) {
-        String query = "SELECT d.director_id, d.name FROM director_film df " +
-                       "INNER JOIN director d ON df.director_id = d.director_id " +
-                       "WHERE df.film_id = ?";
-        return new ArrayList<>(jdbc.query(query, new DirectorRowMapper(), film_id));
-    }
-
     public Map<Long, List<Genre>> getAllFilmGenres(Collection<Film> films) {
         Map<Long, List<Genre>> filmGenreMap = new HashMap<>();
         Collection<String> ids = films.stream()
@@ -399,9 +350,9 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 .toList();
 
         String query = "SELECT fg.film_id, g.genre_id, g.name " +
-                       "FROM film_genre fg " +
-                       "JOIN genre g ON g.genre_id = fg.genre_id " +
-                       "WHERE fg.film_id IN (%s)";
+                "FROM film_genre fg " +
+                "JOIN genre g ON g.genre_id = fg.genre_id " +
+                "WHERE fg.film_id IN (%s)";
 
         jdbc.query(String.format(query, String.join(",", ids)), rs -> {
             Genre genre = Genre.builder()
@@ -429,6 +380,118 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
                 GROUP BY f.film_id
                 ORDER BY (SELECT COUNT(*) FROM film_users WHERE film_users.film_id = f.film_id) DESC;""";
         return findMany(query, mapper, userId, friendId);
+    }
+
+    private List<Film> setFilms(List<Film> films) {
+        if (films.isEmpty()) return films;
+        List<Long> filmIds = films.stream().map(Film::getId).toList();
+
+        Map<Long, Set<Long>> likesMap = getLikesForFilms(filmIds);
+        Map<Long, List<Genre>> genresMap = getAllFilmGenres(films);
+        Map<Long, RatingMpa> mpaMap = getMpaForFilms(filmIds);
+        Map<Long, List<Director>> directorsMap = getDirectorsForFilms(filmIds);
+
+        for (Film film : films) {
+            long id = film.getId();
+            film.setLikes(likesMap.getOrDefault(id, Set.of()));
+            film.setGenres(genresMap.getOrDefault(id, List.of()));
+            film.setMpa(mpaMap.get(id));
+            film.setDirectors(directorsMap.getOrDefault(id, List.of()));
+        }
+
+        return films;
+    }
+
+    private Map<Long, List<Director>> getDirectorsForFilms(List<Long> filmIds) {
+        String sql = """
+                    SELECT df.film_id, d.director_id, d.name
+                    FROM director_film df
+                    JOIN director d ON df.director_id = d.director_id
+                    WHERE df.film_id IN (%s)
+                """.formatted(filmIds.stream().map(id -> "?").collect(Collectors.joining(",")));
+
+        Map<Long, List<Director>> map = new HashMap<>();
+        jdbc.query(sql, rs -> {
+            long filmId = rs.getLong("film_id");
+            Director d = Director.builder()
+                    .id(rs.getLong("director_id"))
+                    .name(rs.getString("name"))
+                    .build();
+            map.computeIfAbsent(filmId, k -> new ArrayList<>()).add(d);
+        }, filmIds.toArray());
+
+        return map;
+    }
+
+    private Map<Long, RatingMpa> getMpaForFilms(List<Long> filmIds) {
+        String sql = """
+                    SELECT f.film_id, r.rating_id, r.name
+                    FROM film f
+                    JOIN rating_mpa r ON f.rating_id = r.rating_id
+                    WHERE f.film_id IN (%s)
+                """.formatted(filmIds.stream().map(id -> "?").collect(Collectors.joining(",")));
+
+        Map<Long, RatingMpa> map = new HashMap<>();
+        jdbc.query(sql, rs -> {
+            long filmId = rs.getLong("film_id");
+            RatingMpa mpa = RatingMpa.builder()
+                    .id(rs.getInt("rating_id"))
+                    .name(rs.getString("name"))
+                    .build();
+            map.put(filmId, mpa);
+        }, filmIds.toArray());
+
+        return map;
+    }
+
+    private Map<Long, Set<Long>> getLikesForFilms(List<Long> filmIds) {
+        String sql = "SELECT film_id, user_id FROM film_users WHERE film_id IN (%s)"
+                .formatted(filmIds.stream().map(id -> "?").collect(Collectors.joining(",")));
+
+        Map<Long, Set<Long>> result = new HashMap<>();
+        jdbc.query(sql, rs -> {
+            long filmId = rs.getLong("film_id");
+            long userId = rs.getLong("user_id");
+            result.computeIfAbsent(filmId, k -> new HashSet<>()).add(userId);
+        }, filmIds.toArray());
+
+        return result;
+    }
+
+
+    private boolean deleteFilmGenres(Long filmId) {
+        String query = "DELETE FROM film_genre WHERE film_id = ?";
+        int rowsDeleted = jdbc.update(query, filmId);
+        return rowsDeleted > 0;
+    }
+
+    private boolean addFilmGenres(Long filmId, List<Genre> genres) {
+        for (Genre genre : genres) {
+            genreDbRepository.getGenreById(genre.getId());
+            String query = "MERGE INTO film_genre AS target " +
+                    "KEY (film_id, genre_id) " +
+                    "VALUES (?, ?)";
+            jdbc.update(query, filmId, genre.getId());
+        }
+        return true;
+    }
+
+    private boolean addDirectorFilms(Long filmId, List<Director> directors) {
+        for (Director director : directors) {
+            directorDbRepository.getById(director.getId())
+                    .orElseThrow(() -> new NotFoundException(String.format("Режиссер с id %d не найден.", director.getId())));
+            String query = "MERGE INTO director_film AS target " +
+                    "KEY (director_id, film_id) " +
+                    "VALUES (?, ?)";
+            jdbc.update(query, director.getId(), filmId);
+        }
+        return true;
+    }
+
+    private boolean deleteDirectorFilms(Long filmId) {
+        String query = "DELETE FROM director_film WHERE film_id = ?";
+        int rowsDeleted = jdbc.update(query, filmId);
+        return rowsDeleted > 0;
     }
 }
 
