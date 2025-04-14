@@ -19,6 +19,7 @@ import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.RatingMpa;
+import ru.yandex.practicum.filmorate.model.enums.FilmSearchBy;
 import ru.yandex.practicum.filmorate.model.enums.FilmSortBy;
 
 import java.sql.Date;
@@ -248,7 +249,7 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
     }
 
     @Override
-    public List<Film> searchFilms(String strQuery, String searchIn) {
+    public List<Film> searchFilms(String strQuery, Set<FilmSearchBy> searchBySet) {
         StringBuilder query = new StringBuilder("SELECT f.* FROM film f ");
         query.append("LEFT JOIN director_film df ON f.film_id = df.film_id ");
         query.append("LEFT JOIN director d ON df.director_id = d.director_id ");
@@ -258,16 +259,20 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         List<String> conditions = new ArrayList<>();
         List<String> params = new ArrayList<>();
 
-        if (searchIn.contains("title")) {
+        if (searchBySet.contains(FilmSearchBy.TITLE)) {
             conditions.add("UPPER(f.name) LIKE UPPER(?)");
             params.add("%" + strQuery + "%");
         }
-        if (searchIn.contains("director")) {
+        if (searchBySet.contains(FilmSearchBy.DIRECTOR)) {
             conditions.add("UPPER(d.name) LIKE UPPER(?)");
             params.add("%" + strQuery + "%");
         }
 
-        query.append(String.join(" OR ", conditions));
+        if (!conditions.isEmpty()) {
+            query.append(String.join(" OR ", conditions));
+        } else {
+            return new ArrayList<>();
+        }
 
         query.append(" GROUP BY f.film_id ");
 

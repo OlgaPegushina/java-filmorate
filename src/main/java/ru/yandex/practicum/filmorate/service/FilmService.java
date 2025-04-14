@@ -15,13 +15,12 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.enums.EventOperation;
 import ru.yandex.practicum.filmorate.model.enums.EventType;
+import ru.yandex.practicum.filmorate.model.enums.FilmSearchBy;
 import ru.yandex.practicum.filmorate.model.enums.FilmSortBy;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -87,7 +86,11 @@ public class FilmService {
 
     public Collection<Film> searchFilms(String strQuery, String searchIn) {
         if (strQuery != null && !strQuery.trim().isEmpty() && searchIn != null && !searchIn.trim().isEmpty()) {
-            return filmStorage.searchFilms(strQuery, searchIn);
+            Set<FilmSearchBy> searchBySet = Arrays.stream(searchIn.split(","))
+                    .map(String::toUpperCase) // Приводим каждое значение к верхнему регистру
+                    .map(FilmSearchBy::valueOf)
+                    .collect(Collectors.toSet());
+            return filmStorage.searchFilms(strQuery, searchBySet);
         }
         return new ArrayList<>();
     }
