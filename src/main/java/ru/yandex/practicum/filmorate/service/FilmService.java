@@ -70,24 +70,19 @@ public class FilmService {
         feedStorage.addEvent(userId, filmId, EventOperation.REMOVE, EventType.LIKE);
     }
 
-    public Collection<Film> findFilmsByDirectorSorted(Long directorId, String sortBy) {
+    public Collection<Film> findFilmsByDirectorSorted(Long directorId, FilmSortBy sortBy) {
         if (sortBy != null) {
             Director director = directorStorage.getById(directorId)
                     .orElseThrow(() -> new NotFoundException(String.format("Режиссер с id %d не найден.", directorId)));
-            try {
-                FilmSortBy filmSortBy = FilmSortBy.valueOf(sortBy.toUpperCase());
-                return filmStorage.findFilmsByDirectorSorted(director.getId(), filmSortBy);
-            } catch (IllegalArgumentException e) {
-                throw new ValidationException(String.format("Неправильное значение для сортировки: %s", sortBy));
+            return filmStorage.findFilmsByDirectorSorted(director.getId(), sortBy);
             }
+            return new ArrayList<>();
         }
-        return new ArrayList<>();
-    }
 
     public Collection<Film> searchFilms(String strQuery, String searchIn) {
         if (strQuery != null && !strQuery.trim().isEmpty() && searchIn != null && !searchIn.trim().isEmpty()) {
             Set<FilmSearchBy> searchBySet = Arrays.stream(searchIn.split(","))
-                    .map(String::toUpperCase) // Приводим каждое значение к верхнему регистру
+                    .map(String::toUpperCase)
                     .map(FilmSearchBy::valueOf)
                     .collect(Collectors.toSet());
             return filmStorage.searchFilms(strQuery, searchBySet);

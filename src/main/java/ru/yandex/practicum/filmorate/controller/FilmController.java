@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.enums.FilmSortBy;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.Collection;
@@ -35,7 +36,7 @@ public class FilmController {
     @GetMapping("/director/{directorId}")
     public Collection<Film> getFilmsByDirector(
             @PathVariable Long directorId,
-            @RequestParam(required = false) String sortBy) {
+            @RequestParam(required = false) FilmSortBy sortBy) {
         return filmService.findFilmsByDirectorSorted(directorId, sortBy);
     }
 

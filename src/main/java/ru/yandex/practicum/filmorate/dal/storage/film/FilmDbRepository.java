@@ -241,9 +241,9 @@ public class FilmDbRepository extends BaseRepository<Film> implements FilmStorag
         query.append("WHERE df.director_id = ? ");
         query.append("GROUP BY f.film_id ");
         query.append("ORDER BY ");
-        if (FilmSortBy.LIKES.equals((sortBy))) {
+        if (FilmSortBy.LIKES == sortBy) {
             query.append("like_count DESC");
-        } else {
+        } else if (FilmSortBy.YEAR == sortBy) {
             query.append("f.release_date");
         }
 
