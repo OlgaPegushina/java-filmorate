@@ -1,18 +1,20 @@
 package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldDefaults;
 
+
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @EqualsAndHashCode(of = {"id"})
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Genre {
+public class Director {
     Long id;
 
-    @NotBlank
+    @NotBlank(message = "У режиссера должно быть указано имя")
     String name;
 }

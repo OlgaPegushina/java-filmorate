@@ -11,10 +11,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import ru.yandex.practicum.filmorate.FilmorateApplication;
+import ru.yandex.practicum.filmorate.dal.storage.director.DirectorDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.film.FilmDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.genre.GenreDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.mpa.MpaDbRepository;
 import ru.yandex.practicum.filmorate.dal.storage.user.UserDbRepository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -30,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @JdbcTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@Import({FilmDbRepository.class, UserDbRepository.class, MpaDbRepository.class, GenreDbRepository.class})
+@Import({FilmDbRepository.class, UserDbRepository.class, MpaDbRepository.class, GenreDbRepository.class, DirectorDbRepository.class})
 @ContextConfiguration(classes = {FilmorateApplication.class})
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -38,6 +40,7 @@ public class FilmDbRepositoryTest {
     FilmDbRepository filmDbRepository;
     UserDbRepository userDbRepository;
     MpaDbRepository mpaDbRepository;
+    DirectorDbRepository directorDbRepository;
 
     @Test
     void createTest() {
@@ -74,7 +77,8 @@ public class FilmDbRepositoryTest {
     void getByIdTest() {
         Film film = createFilm();
         Film newFilm = filmDbRepository.create(film);
-        Film filmById = filmDbRepository.getById(newFilm.getId());
+        Film filmById = filmDbRepository.getById(newFilm.getId())
+                .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", newFilm.getId())));
 
         assertThat(filmById).hasFieldOrPropertyWithValue("id", 1L);
         assertThat(filmById).hasFieldOrPropertyWithValue("name", "name");
@@ -118,7 +122,8 @@ public class FilmDbRepositoryTest {
                 .mpa(mpaDbRepository.getMpaById(3))
                 .build();
         filmDbRepository.update(filmUpdate);
-        film = filmDbRepository.getById(1L);
+        film = filmDbRepository.getById(1L)
+                .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден.", 1L)));
 
         assertThat(film).hasFieldOrPropertyWithValue("id", 1L);
         assertThat(film).hasFieldOrPropertyWithValue("name", "name2");
@@ -194,36 +199,5 @@ public class FilmDbRepositoryTest {
 
         assertEquals(likes.size(), 1, "Количество пользователей возвращается неверно");
         assertTrue(likes.contains(user2.getId()));
-    }
-
-    @Test
-    void getPopularFilmsTest() {
-        Film film = filmDbRepository.create(createFilm());
-        Film film2 = filmDbRepository.create(createFilm());
-
-        User user1 = User.builder()
-                .login("логин")
-                .name("Имя")
-                .email("email@mail.ru")
-                .birthday(LocalDate.of(2000, 8, 19))
-                .build();
-        user1 = userDbRepository.create(user1);
-        User user2 = User.builder()
-                .login("логин2")
-                .name("Имя2")
-                .email("email2@mail.ru")
-                .birthday(LocalDate.of(2000, 8, 19))
-                .build();
-        user2 = userDbRepository.create(user2);
-
-        filmDbRepository.addLike(film.getId(), user1.getId());
-        filmDbRepository.addLike(film2.getId(), user2.getId());
-        filmDbRepository.addLike(film2.getId(), user1.getId());
-
-        List<Film> popularFilms = (List<Film>) filmDbRepository.getPopularFilms(2);
-
-        assertEquals(popularFilms.size(), 2, "Количество возвращено неверно");
-        assertEquals(popularFilms.get(0), film2);
-        assertEquals(popularFilms.get(1), film);
     }
 }

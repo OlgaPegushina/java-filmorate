@@ -12,6 +12,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import ru.yandex.practicum.filmorate.FilmorateApplication;
 import ru.yandex.practicum.filmorate.dal.storage.user.UserDbRepository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
@@ -66,7 +67,8 @@ public class UserDbRepositoryTest {
     void getByIdTest() {
         User user = createUser();
         User newUser = userDbRepository.create(user);
-        User userById = userDbRepository.getById(newUser.getId());
+        User userById = userDbRepository.getById(newUser.getId())
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id %d не найден.", newUser.getId())));
 
         assertThat(userById).hasFieldOrPropertyWithValue("id", 1L);
         assertThat(userById).hasFieldOrPropertyWithValue("name", "Имя");
@@ -120,7 +122,8 @@ public class UserDbRepositoryTest {
                 .birthday(LocalDate.of(2000, 8, 19))
                 .build();
         userDbRepository.update(userUpdate);
-        user = userDbRepository.getById(1L);
+        user = userDbRepository.getById(1L)
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id %d не найден.", 1L)));
 
         assertThat(user).hasFieldOrPropertyWithValue("id", 1L);
         assertThat(user).hasFieldOrPropertyWithValue("name", "Имя2");

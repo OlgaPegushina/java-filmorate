@@ -14,10 +14,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository("userDbRepository")
@@ -45,13 +42,16 @@ public class UserDbRepository extends BaseRepository<User> implements UserStorag
     }
 
     @Override
-    public User getById(Long id) {
+    public Optional<User> getById(Long id) {
         String query = "SELECT * FROM users WHERE user_id = ?";
-        User user = findOne(query, mapper, id)
-                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id %d не найден.", id)));
-        Set<Long> friends = getFriendIds(id);
-        user.setFriends(friends);
-        return user;
+        Optional<User> optionalUser = findOne(query, mapper, id);
+
+        optionalUser.ifPresent(user -> {
+            Set<Long> friends = getFriendIds(id);
+            user.setFriends(friends);
+        });
+
+        return optionalUser;
     }
 
     @Override
@@ -95,16 +95,16 @@ public class UserDbRepository extends BaseRepository<User> implements UserStorag
 
     @Override
     public void addFriend(Long userId, Long friendId) {
-        getById(userId);
-        getById(friendId);
+        validateUser(userId);
+        validateUser(friendId);
         String query = "INSERT INTO friendship_status (user_id, friend_id, is_status) VALUES (?, ?, ?)";
         super.update(query, userId, friendId, false);
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
-        getById(userId);
-        getById(friendId);
+        validateUser(userId);
+        validateUser(friendId);
         String query = "DELETE FROM friendship_status where user_id = ? and friend_id = ?";
         super.delete(query, userId, friendId);
     }
@@ -117,22 +117,28 @@ public class UserDbRepository extends BaseRepository<User> implements UserStorag
 
     @Override
     public List<User> getMutualFriends(Long userId1, Long userId2) {
-        getById(userId1);
-        getById(userId2);
+        validateUser(userId1);
+        validateUser(userId2);
         String query = "SELECT u.* " +
-                "FROM users u " +
-                "INNER JOIN friendship_status f1 ON u.user_id = f1.friend_id " +
-                "INNER JOIN friendship_status f2 ON u.user_id = f2.friend_id " +
-                "WHERE f1.user_id = ? " +
-                "    AND f2.user_id = ?;";
+                       "FROM users u " +
+                       "INNER JOIN friendship_status f1 ON u.user_id = f1.friend_id " +
+                       "INNER JOIN friendship_status f2 ON u.user_id = f2.friend_id " +
+                       "WHERE f1.user_id = ? " +
+                       "    AND f2.user_id = ?;";
         return findMany(query, mapper, userId1, userId2);
     }
 
     @Override
     public List<User> getAllFriends(Long userId) {
-        getById(userId);
+        validateUser(userId);
         String query = "SELECT * FROM users u WHERE u.user_id IN " +
-                "(SELECT f.friend_id FROM friendship_status f WHERE f.user_id = ?)";
+                       "(SELECT f.friend_id FROM friendship_status f WHERE f.user_id = ?)";
         return findMany(query, mapper, userId);
+    }
+
+    @Override
+    public void validateUser(Long userId) {
+        getById(userId)
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id %d не найден.", userId)));
     }
 }

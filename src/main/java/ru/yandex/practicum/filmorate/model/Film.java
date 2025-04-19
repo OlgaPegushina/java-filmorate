@@ -43,4 +43,7 @@ public class Film {
 
     @Builder.Default
     List<Genre> genres = new ArrayList<>();
+
+    @Builder.Default
+    List<Director> directors = new ArrayList<>();
 }
